@@ -6,15 +6,21 @@
 
 ## The setup
 
-TODO: what runs where, in a few sentences, and with which identities; then the diagram of the components (a
-`flowchart`, one arrow per call, labelled with the identity it uses).
+A queued workflow job with the label `aca-agent` makes the KEDA scaler of an Azure Container Apps job start one execution. Its container registers one just-in-time runner for the repository, with a GitHub App installation token minted from a private key it reads in Key Vault through its managed identity. The runner takes that one job, then the container exits. With nothing queued, nothing runs. No personal access token or stored secret: the two GitHub Apps' keys live in Key Vault, and workflow steps reach Azure through GitHub OIDC with an identity the job never holds. Requirements: [PRD-001](docs/prd/PRD-001-ephemeral-runners.md); departures from it: [decisions](docs/DECISIONS.md); [security](docs/SECURITY.md).
 
 ```mermaid
 flowchart LR
-    user(["User"]) --> client["TODO: client or agent"]
-    client -->|"TODO: identity"| service["TODO: what the spike examines"]
-    service --> dependency["TODO: what it calls"]
+    github(["GitHub: private repository"]) -->|"queued job, label aca-agent"| keda["KEDA github-runner scaler"]
+    keda -->|"Scaler App key (Key Vault reference)"| github
+    keda --> execution["Container Apps job execution"]
+    execution -->|"runtime identity"| vault["Key Vault: Registrar App key"]
+    execution -->|"Registrar App installation token"| github
+    execution -->|"run.sh --jitconfig: one job"| github
+    registry["Container registry: runner image"] -->|"runtime identity (AcrPull)"| execution
+    steps["Workflow steps"] -->|"GitHub OIDC, deployer identity"| azure["Azure resources"]
 ```
+
+The runner image and its tests: [runner/README.md](runner/README.md). Progress, phase by phase: [experiments](docs/experiments/README.md).
 
 ## Key findings
 
