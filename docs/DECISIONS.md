@@ -18,6 +18,7 @@ Where the build departs from [PRD-001](prd/PRD-001-ephemeral-runners.md) or fill
 | D12 | 2026-11-14 | Memory is derived from the vCPUs (twice), not a separate setting. | On the Consumption profile those are the only valid combinations. |
 | D13 | 2026-11-14 | Jobs needing Docker or Podman (e.g. a dev-container build) stay on GitHub-hosted runners. | In the job, Podman found no `/dev/fuse`, no user namespaces and cgroups v1 (experiment 03). |
 | D14 | 2026-11-14 | The image includes uv (0.13.8); the system Python is 3.12. | The target repository's jobs need uv with Python 3.12. |
+| D15 | 2026-11-14 | The scale rule uses `enableEtags=false`, and the entrypoint removes a runner that gets no job within `RUNNER_IDLE_TIMEOUT` (300 s). | With ETags the scaler counted one queued job twice and kept counting a completed run, so idle executions restarted every six minutes (experiment 04). Without them, a few hundred more API calls an hour, far below the App's limit. The watchdog covers cancelled runs and any double count left (KEDA counts runs from two requests without removing duplicates). |
 
 ## Open
 

@@ -122,12 +122,13 @@ resource "azurerm_container_app_job" "runner" {
         name             = "github-runner"
         custom_rule_type = "github-runner"
         metadata = {
-          owner                     = var.runner_github_owner
-          runnerScope               = "repo"
-          repos                     = var.runner_github_repo
-          labels                    = var.runner_labels
-          noDefaultLabels           = "true"
-          enableEtags               = "true"
+          owner           = var.runner_github_owner
+          runnerScope     = "repo"
+          repos           = var.runner_github_repo
+          labels          = var.runner_labels
+          noDefaultLabels = "true"
+          # Off: with ETags the scaler kept counting a completed run (docs/DECISIONS.md, D15).
+          enableEtags               = "false"
           targetWorkflowQueueLength = "1"
           applicationID             = var.runner_scaler_app_id
           installationID            = var.runner_scaler_installation_id

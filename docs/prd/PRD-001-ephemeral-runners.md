@@ -23,7 +23,7 @@ Scope: one repository (a setting), repository-level runners only.
 | F5 | User-assigned identities: `runtime` (attached to the job: AcrPull, Key Vault Secrets User on the two secrets only), `deployer` (never attached; workflow steps through GitHub OIDC; Reader on one resource group by default), optional `infra` (never attached; runs this Terraform from a workflow). |
 | F6 | GitHub OIDC to Azure: federated credentials whose subject is a GitHub environment (e.g. `environment:azure-dev`), checked against a real token; created one after the other. |
 | F7 | Registration with `POST /repos/{owner}/{repo}/actions/runners/generate-jitconfig`, then `run.sh --jitconfig`. |
-| F8 | Label `aca-agent`; the scaler counts it (`noDefaultLabels`, `enableEtags`, `targetWorkflowQueueLength=1`, `runnerScope=repo`); workflows use `runs-on: aca-agent` (a JIT runner has no default labels: [DECISIONS](../DECISIONS.md) D9). |
+| F8 | Label `aca-agent`; the scaler counts it (`noDefaultLabels`, `targetWorkflowQueueLength=1`, `runnerScope=repo`; `enableEtags` off: [DECISIONS](../DECISIONS.md) D15); workflows use `runs-on: aca-agent` (a JIT runner has no default labels: [DECISIONS](../DECISIONS.md) D9). |
 | F9 | Job settings (all settings, these defaults): 2 CPU, 4 Gi, 0–3 executions, polling 30 s, parallelism 1, completions 1, **no retry**, replica timeout 3 h 30. |
 | F10 | v1 networking: Consumption environment without a virtual network; Key Vault public with RBAC only. Private networking behind `enable_private_networking` (Phase 6). |
 | F11 | Image: the official runner image pinned by digest, plus the Azure CLI, the GitHub CLI and Node LTS; no Docker daemon (no container actions, no `services:`). |
