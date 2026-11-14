@@ -23,16 +23,23 @@ start_fake() {
   FAKE_URL="http://127.0.0.1:$(cat "$WORK/$1.port")"
 }
 
-# run_entrypoint <name> [VARIABLE=value...]: runs the entrypoint with a stub runner; sets EXIT_CODE.
+# run_entrypoint <name> [VARIABLE=value...]: runs the entrypoint with a stub runner, which records its arguments and
+# environment, starts a job (writes a Worker log) unless STUB_STARTS_JOB=0, and lives 4 s so the idle watchdog can
+# act. Sets EXIT_CODE.
 run_entrypoint() {
   local name=$1
   mkdir -p "$WORK/$name/runner"
-  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$@" > "%s/args"\nenv > "%s/env"\n' "$WORK/$name" "$WORK/$name" \
-    >"$WORK/$name/runner/run.sh"
+  cat >"$WORK/$name/runner/run.sh" <<EOF
+#!/usr/bin/env bash
+printf "%s\\n" "\$@" > "$WORK/$name/args"
+env > "$WORK/$name/env"
+if [[ "\${STUB_STARTS_JOB:-1}" == 1 ]]; then mkdir -p "$WORK/$name/runner/_diag" && touch "$WORK/$name/runner/_diag/Worker_1.log"; fi
+sleep 4
+EOF
   chmod +x "$WORK/$name/runner/run.sh"
   EXIT_CODE=0
   env -i PATH="$PATH" HOME="$HOME" GITHUB_API_URL="$FAKE_URL" RUNNER_DIR="$WORK/$name/runner" \
-    CONTAINER_APP_JOB_EXECUTION_NAME="test-execution" GH_OWNER=octo GH_REPO=demo \
+    CONTAINER_APP_JOB_EXECUTION_NAME="test-execution" GH_OWNER=octo GH_REPO=demo RUNNER_IDLE_TIMEOUT=2 \
     GH_REGISTRAR_CLIENT_ID=Iv1.test GH_REGISTRAR_INSTALLATION_ID=42 RUNNER_LABELS="aca-agent" RUNNER_GROUP_ID=1 \
     "${@:2}" bash "$ENTRYPOINT" 2>"$WORK/$name/log" || EXIT_CODE=$?
 }
@@ -84,6 +91,7 @@ check "the logs hold no secret" \
   bash -c "! grep -E 'test-installation-token|test-jit-config|BEGIN|eyJ' '$WORK/local/log'"
 check "the logs are JSON lines with the phases" test \
   "$(jq -r .phase "$WORK/local/log" | paste -sd,)" = "start,kv_read,jwt,install_token,jitconfig,run"
+check "a runner that gets a job is not removed" test "$(requests_to /actions/runners/7 | wc -l)" = 0
 
 echo "Azure mode reads the key from Key Vault with the managed identity"
 run_entrypoint azure IDENTITY_ENDPOINT="$FAKE_URL/msi/token" IDENTITY_HEADER=test-identity-header \
@@ -96,6 +104,13 @@ check "Key Vault is called with the identity's token" test \
   "$(requests_to /secrets/registrar | tail -1 | jq -r .authorization)" = "Bearer test-vault-token"
 check "the runner's environment holds no identity variable" \
   bash -c "! grep -E '^(IDENTITY_|KV_SECRET|AZURE_CLIENT_ID_RUNTIME)' '$WORK/azure/env'"
+
+echo "A runner that gets no job is removed after the idle timeout"
+run_entrypoint idle GH_REGISTRAR_KEY_FILE="$WORK/app.pem" STUB_STARTS_JOB=0
+check "it removes its runner, with the installation token" test \
+  "$(requests_to /actions/runners/7 | jq -r '"\(.method) \(.authorization)"')" = "DELETE Bearer test-installation-token"
+check "it logs why" grep -q '"phase":"idle"' "$WORK/idle/log"
+check "the logs still hold no secret" bash -c "! grep -E 'test-installation-token|test-jit-config' '$WORK/idle/log'"
 
 echo "Missing settings stop it before any call"
 run_entrypoint missing GH_REPO=

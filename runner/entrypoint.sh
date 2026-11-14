@@ -6,7 +6,10 @@
 #      Administration: write,
 #   3. asks GitHub for a JIT runner configuration,
 #   4. clears every sensitive variable, then replaces itself with the runner (run.sh --jitconfig), which runs one job
-#      and exits.
+#      and exits;
+#   5. meanwhile, a watchdog removes the runner if no job reaches it within RUNNER_IDLE_TIMEOUT seconds: the scaler can
+#      start more executions than there are jobs (a run listed both as queued and in progress is counted twice), and a
+#      cancelled run leaves its runner waiting. The watchdog holds the installation token until a job starts, no longer.
 # Secrets stay in shell variables (never in files, logs or command lines, apart from the JIT configuration that
 # run.sh requires as an argument). Logs are JSON lines on stderr. Exit codes: 1 settings, 2 Azure, 3 GitHub.
 set -euo pipefail
@@ -16,6 +19,7 @@ GITHUB_API_VERSION="2026-03-10"
 KEY_VAULT_API_VERSION="2025-07-01"
 MANAGED_IDENTITY_API_VERSION="2019-08-01"
 RUNNER_DIR="${RUNNER_DIR:-/home/runner}"
+RUNNER_IDLE_TIMEOUT="${RUNNER_IDLE_TIMEOUT:-300}"
 # Container Apps names each job execution; elsewhere (local test mode) the host name stands in.
 EXECUTION_NAME="${CONTAINER_APP_JOB_EXECUTION_NAME:-$(hostname)}"
 RUNNER_NAME=""
@@ -117,12 +121,29 @@ installation_token() {
   github POST "/app/installations/$GH_REGISTRAR_INSTALLATION_ID/access_tokens" "$1" "$body" | jq -er .token
 }
 
-# jit_config <token>: the encoded configuration of a new single-use runner named RUNNER_NAME.
+# jit_config <token>: GitHub's answer for a new single-use runner named RUNNER_NAME: its id and encoded configuration.
 jit_config() {
   local body
   body=$(jq -cn --arg name "$RUNNER_NAME" --arg labels "$RUNNER_LABELS" --argjson group "$RUNNER_GROUP_ID" \
     '{name: $name, runner_group_id: $group, labels: ($labels | split(",") | map(select(. != ""))), work_folder: "_work"}')
-  github POST "/repos/$GH_OWNER/$GH_REPO/actions/runners/generate-jitconfig" "$1" "$body" | jq -er .encoded_jit_config
+  github POST "/repos/$GH_OWNER/$GH_REPO/actions/runners/generate-jitconfig" "$1" "$body" |
+    jq -ce '{id: .runner.id, config: .encoded_jit_config}'
+}
+
+# watch_idle_runner <runner id> <token>: run in the background. Returns as soon as a job starts (the runner writes a
+# Worker log), forgetting the token; after RUNNER_IDLE_TIMEOUT seconds without one, removes the runner, which then
+# stops, ending the execution.
+watch_idle_runner() {
+  local deadline=$((SECONDS + RUNNER_IDLE_TIMEOUT))
+  while :; do
+    if compgen -G "$RUNNER_DIR/_diag/Worker_*.log" >/dev/null; then
+      return 0
+    fi
+    ((SECONDS < deadline)) || break
+    sleep 2
+  done
+  log idle "no job within ${RUNNER_IDLE_TIMEOUT}s: removing the runner"
+  github DELETE "/repos/$GH_OWNER/$GH_REPO/actions/runners/$1" "$2" >/dev/null || log error "could not remove the runner"
 }
 
 # A new name for every runner: the execution's name and a random suffix, at most 64 characters.
@@ -133,7 +154,7 @@ new_runner_name() {
 }
 
 main() {
-  local key jwt token jit
+  local key jwt token runner jit runner_id
   RUNNER_NAME=$(new_runner_name)
   log start
   require_settings
@@ -143,10 +164,14 @@ main() {
   log jwt
   token=$(installation_token "$jwt") || fail 3 "could not get an installation token"
   log install_token
-  jit=$(jit_config "$token") || fail 3 "could not create the JIT runner configuration"
+  runner=$(jit_config "$token") || fail 3 "could not create the JIT runner configuration"
+  jit=$(jq -r .config <<<"$runner")
+  runner_id=$(jq -r .id <<<"$runner")
   log jitconfig
-  unset key jwt token
+  unset key jwt runner
   unset "${SENSITIVE_VARIABLES[@]}"
+  watch_idle_runner "$runner_id" "$token" &
+  unset token
   log run
   exec "$RUNNER_DIR/run.sh" --jitconfig "$jit"
 }

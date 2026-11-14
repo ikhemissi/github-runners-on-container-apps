@@ -26,13 +26,16 @@ class FakeServices(BaseHTTPRequestHandler):
     def do_POST(self):
         self.answer()
 
+    def do_DELETE(self):
+        self.answer()
+
     def answer(self):
         url = urlparse(self.path)
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length).decode() if length else ""
         self.record(url, body)
         status, response = self.route(url.path, parse_qs(url.query))
-        payload = json.dumps(response).encode()
+        payload = b"" if status == 204 else json.dumps(response).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
@@ -57,7 +60,11 @@ class FakeServices(BaseHTTPRequestHandler):
         if path.endswith("/actions/runners/generate-jitconfig"):
             if authorization != f"Bearer {INSTALLATION_TOKEN}":
                 return 401, {"message": "bad installation token"}
-            return 201, {"runner": {"id": 1}, "encoded_jit_config": JIT_CONFIG}
+            return 201, {"runner": {"id": 7}, "encoded_jit_config": JIT_CONFIG}
+        if self.command == "DELETE" and path.endswith("/actions/runners/7"):
+            if authorization != f"Bearer {INSTALLATION_TOKEN}":
+                return 401, {"message": "bad installation token"}
+            return 204, {}
         return 404, {"message": "not found"}
 
     def record(self, url, body):

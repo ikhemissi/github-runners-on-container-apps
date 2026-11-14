@@ -1,6 +1,6 @@
-# The runner job (PRD-001, F2, F7, F9): each execution registers one just-in-time runner that runs one job, then
-# exits. Phase 3 starts executions by hand (manual trigger); Phase 4 switches to the event trigger with the KEDA
-# github-runner rule, which replaces the job (a trigger type can't change in place).
+# The runner job (PRD-001, F2, F7, F8, F9): the KEDA github-runner rule starts one execution per queued job with the
+# runners' labels; each execution registers one just-in-time runner that runs that job, then exits. Nothing queued:
+# nothing runs. (Changing a job's trigger type replaces the job.)
 
 variable "runner_image_tag" {
   description = "Tag of the runner image in the project's registry (RUNNER_IMAGE_TAG), e.g. the commit it was built from."
@@ -34,6 +34,31 @@ variable "runner_labels" {
 
 variable "runner_group_id" {
   description = "The runner group (RUNNER_GROUP_ID); 1 is the repository's default group."
+  type        = number
+}
+
+variable "runner_scaler_app_id" {
+  description = "The Scaler App's App ID, the number on its settings page (RUNNER_SCALER_APP_ID); KEDA needs it, not the client ID."
+  type        = string
+}
+
+variable "runner_scaler_installation_id" {
+  description = "Its installation ID on the repository (RUNNER_SCALER_INSTALLATION_ID)."
+  type        = string
+}
+
+variable "runner_max_executions" {
+  description = "Most executions at once (RUNNER_MAX_EXECUTIONS): more queued jobs wait for a free one."
+  type        = number
+}
+
+variable "runner_polling_interval_in_seconds" {
+  description = "How often KEDA asks GitHub for queued jobs (RUNNER_POLLING_INTERVAL)."
+  type        = number
+}
+
+variable "runner_idle_timeout_in_seconds" {
+  description = "How long a runner waits for a job before it removes itself (RUNNER_IDLE_TIMEOUT): the scaler can start more executions than there are jobs (docs/DECISIONS.md, D15)."
   type        = number
 }
 
@@ -77,9 +102,43 @@ resource "azurerm_container_app_job" "runner" {
     identity = azurerm_user_assigned_identity.runner_runtime.id
   }
 
-  manual_trigger_config {
+  # The Scaler App's key, read from Key Vault by the runtime identity; only KEDA uses it, never the container.
+  secret {
+    name                = "github-app-scaler-key"
+    key_vault_secret_id = azurerm_key_vault_secret.runner_keys["scaler"].versionless_id
+    identity            = azurerm_user_assigned_identity.runner_runtime.id
+  }
+
+  event_trigger_config {
     parallelism              = 1
     replica_completion_count = 1
+
+    scale {
+      min_executions              = 0
+      max_executions              = var.runner_max_executions
+      polling_interval_in_seconds = var.runner_polling_interval_in_seconds
+
+      rules {
+        name             = "github-runner"
+        custom_rule_type = "github-runner"
+        metadata = {
+          owner                     = var.runner_github_owner
+          runnerScope               = "repo"
+          repos                     = var.runner_github_repo
+          labels                    = var.runner_labels
+          noDefaultLabels           = "true"
+          enableEtags               = "true"
+          targetWorkflowQueueLength = "1"
+          applicationID             = var.runner_scaler_app_id
+          installationID            = var.runner_scaler_installation_id
+        }
+
+        authentication {
+          secret_name       = "github-app-scaler-key"
+          trigger_parameter = "appKey"
+        }
+      }
+    }
   }
 
   template {
@@ -112,6 +171,10 @@ resource "azurerm_container_app_job" "runner" {
       env {
         name  = "RUNNER_GROUP_ID"
         value = tostring(var.runner_group_id)
+      }
+      env {
+        name  = "RUNNER_IDLE_TIMEOUT"
+        value = tostring(var.runner_idle_timeout_in_seconds)
       }
       env {
         name  = "KV_SECRET_URI_REGISTRAR"
