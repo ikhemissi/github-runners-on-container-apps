@@ -22,7 +22,7 @@ No personal access token, client secret, registry admin user or storage key exis
 
 ## Residual risks
 
-- **The managed identity endpoint may still be reachable from job steps**, although its variables are cleared: steps run in the container that had the `runtime` identity. To test in Phase 3, from a workflow step. Mitigations: the Registrar App is installed on one repository with one permission, runners are single-use and labelled, and the job has nothing else. A future option, not built: a small token broker that mints JIT configurations, so the job never holds an App key.
+- **The managed identity endpoint is reachable from job steps** (`http://localhost:12356/msi/token`), but answers **403** without its header, and no process's environment keeps the header, as checked as root from a step (experiment 03). The smoke test checks this on every run. Mitigations: the Registrar App is installed on one repository with one permission, runners are single-use and labelled, and the job has nothing else. A future option, not built: a small token broker that mints JIT configurations, so the job never holds an App key.
 - **Passwordless sudo** in the official image: job steps can become root in the container ([DECISIONS](DECISIONS.md), open).
 
 ## Workflows

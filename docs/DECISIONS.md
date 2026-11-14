@@ -15,10 +15,13 @@ Where the build departs from [PRD-001](prd/PRD-001-ephemeral-runners.md) or fill
 | D9 | 2026-11-14 | Workflows request `runs-on: aca-agent` alone, not `[self-hosted, aca-agent]`. | A runner registered with `generate-jitconfig` reported only the labels it was given (`aca-agent`), none of the default `self-hosted`, `Linux`, `X64`: a job asking for `self-hosted` would never match it. The scaler counts `aca-agent` with `noDefaultLabels`, so all three agree. |
 | D10 | 2026-11-14 | Terraform creates the two key secrets with a **write-only placeholder** (`value_wo`); the real keys are uploaded by hand as new versions. | A role assignment needs its scope to exist: this keeps the runtime identity's Key Vault Secrets User role on the two secrets only, not on the vault, while no key, and not even the placeholder, reaches the Terraform state (`value_wo` is stored as null). Needs Terraform 1.11 or later. |
 | D11 | 2026-11-14 | The optional `infra` identity (a workflow running this Terraform) comes with that workflow in Phase 6, not in Phase 2. | Nothing uses it before then. |
+| D12 | 2026-11-14 | Memory is derived from the vCPUs (twice), not a separate setting. | On the Consumption profile those are the only valid combinations. |
+| D13 | 2026-11-14 | Jobs needing Docker or Podman (e.g. a dev-container build) stay on GitHub-hosted runners. | In the job, Podman found no `/dev/fuse`, no user namespaces and cgroups v1 (experiment 03). |
+| D14 | 2026-11-14 | The image includes uv (0.13.8); the system Python is 3.12. | The target repository's jobs need uv with Python 3.12. |
 
 ## Open
 
-- **Passwordless sudo:** the official image gives the `runner` user passwordless `sudo`, so job steps can become root in the container. Many actions rely on it (package installs). Kept for now; assessed with the managed identity test in Phase 3 ([SECURITY](SECURITY.md)).
-- **Image size:** 2.5 GB (the official image is 1.6 GB, the Azure CLI most of the rest). Measure the start-up time of an execution in Phase 3 before slimming it.
+- **Passwordless sudo:** the official image gives the `runner` user passwordless `sudo`, so job steps can become root in the container. Many actions rely on it (package installs). Even as root, a step found no identity header and got 403 from the endpoint (experiment 03); kept.
+- **Image size:** 2.5 GB (775 MB compressed): pulled in 15 s, 36 s from an execution's start to its job (experiment 03). Not worth slimming for now.
 - **Copilot cloud agent:** GitHub recommends ephemeral, single-use runners for it, which these are. Its firewall on self-hosted runners is still to check.
 - **Self-hosted runner billing:** self-hosted minutes don't use the included minutes; a per-minute platform charge announced for private repositories was postponed (to recheck on GitHub's billing page before relying on it).

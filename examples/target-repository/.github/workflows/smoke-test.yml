@@ -25,3 +25,16 @@ jobs:
             exit 1
           fi
           echo "None of the entrypoint's sensitive variables is set."
+      - name: The managed identity endpoint gives nothing without its header
+        # On Azure Container Apps the identity endpoint is http://localhost:12356/msi/token; it needs the header that
+        # the entrypoint cleared. With the image's passwordless sudo, look for that header in every process too.
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+            "http://localhost:12356/msi/token?resource=https://vault.azure.net&api-version=2019-08-01" || true)
+          echo "Identity endpoint without the header: HTTP ${status:-no answer}"
+          holders=$(sudo grep -l -a IDENTITY_HEADER /proc/[0-9]*/environ 2>/dev/null || true)
+          echo "Processes whose environment holds the header: ${holders:-none}"
+          if [[ "$status" == 200 || -n "$holders" ]]; then
+            echo "::error::a job step can get a token for the runtime identity"
+            exit 1
+          fi

@@ -44,6 +44,11 @@ resource "azurerm_key_vault_secret" "runner_keys" {
   value_wo         = "placeholder: upload the GitHub App's private key (docs/BOOTSTRAP.md)"
   value_wo_version = 1
   tags             = local.tags
+
+  # Uploading a key (az keyvault secret set --file) replaces the version's tags: not drift to undo.
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 resource "azurerm_role_assignment" "runner_runtime_pull" {
