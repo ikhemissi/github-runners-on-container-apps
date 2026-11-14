@@ -12,6 +12,7 @@ Where the build departs from [PRD-001](prd/PRD-001-ephemeral-runners.md) or fill
 | D6 | 2026-11-14 | Secrets stay in shell variables; the private key reaches `openssl` through a file descriptor, headers through stdin. | Nothing on disk and nothing on a command line, except the JIT configuration that `run.sh --jitconfig` requires (see [SECURITY](SECURITY.md)). |
 | D7 | 2026-11-14 | The repository is public; its own CI and image builds run on GitHub-hosted runners. | Public repositories don't use the minutes these runners are meant to save. |
 | D8 | 2026-11-14 | The workflows that run **on** these runners (`smoke-test.yml`, later `print-oidc-claims.yml`) live in `examples/target-repository/`, to copy into the private repository they serve. | Self-hosted runners must never take jobs of a public repository, whose pull requests come from anyone. |
+| D9 | 2026-11-14 | Workflows request `runs-on: aca-agent` alone, not `[self-hosted, aca-agent]`. | A runner registered with `generate-jitconfig` reported only the labels it was given (`aca-agent`), none of the default `self-hosted`, `Linux`, `X64`: a job asking for `self-hosted` would never match it. The scaler counts `aca-agent` with `noDefaultLabels`, so all three agree. |
 
 ## Open
 

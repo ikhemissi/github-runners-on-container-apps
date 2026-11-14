@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   smoke-test:
-    runs-on: [self-hosted, aca-agent]
+    # A JIT runner carries only the labels it was registered with (no self-hosted, Linux, X64): docs/DECISIONS.md D9.
+    runs-on: aca-agent
     timeout-minutes: 10
     steps:
       - name: Runner
