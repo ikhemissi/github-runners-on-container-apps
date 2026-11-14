@@ -53,4 +53,6 @@ Registers a real JIT runner on the target repository, without Azure. The reposit
 4. **Start one runner:** `make run-local GH_REGISTRAR_KEY_FILE=/path/to/registrar.pem`. It appears under the repository's Settings → Actions → Runners, idle.
 5. **Run a job on it:** copy [smoke-test.yml](../examples/target-repository/.github/workflows/smoke-test.yml) (and [actionlint.yaml](../examples/target-repository/.github/actionlint.yaml) if the repository runs actionlint) into the target repository's default branch and run it (Actions → *Smoke test of the ephemeral runners* → Run workflow). The runner takes the job, then exits and disappears from the list.
 
-Container actions and `services:` don't work on these runners: the image has no Docker daemon.
+Container actions and `services:` don't work on these runners: the image has no Docker daemon, and Container Apps can't run one (experiment 03); keep such jobs on GitHub-hosted runners, started only when needed.
+
+The image is much smaller than GitHub's hosted images: a job that relies on a tool they include (Go, Java, .NET, …) installs it with its setup action (`actions/setup-go`, …). uv, Python 3.12, Node, the Azure CLI and the GitHub CLI are in the image; `setup-node` and `setup-uv` still work and install the versions a workflow pins.
