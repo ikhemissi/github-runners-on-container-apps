@@ -13,6 +13,8 @@ Where the build departs from [PRD-001](prd/PRD-001-ephemeral-runners.md) or fill
 | D7 | 2026-11-14 | The repository is public; its own CI and image builds run on GitHub-hosted runners. | Public repositories don't use the minutes these runners are meant to save. |
 | D8 | 2026-11-14 | The workflows that run **on** these runners (`smoke-test.yml`, later `print-oidc-claims.yml`) live in `examples/target-repository/`, to copy into the private repository they serve. | Self-hosted runners must never take jobs of a public repository, whose pull requests come from anyone. |
 | D9 | 2026-11-14 | Workflows request `runs-on: aca-agent` alone, not `[self-hosted, aca-agent]`. | A runner registered with `generate-jitconfig` reported only the labels it was given (`aca-agent`), none of the default `self-hosted`, `Linux`, `X64`: a job asking for `self-hosted` would never match it. The scaler counts `aca-agent` with `noDefaultLabels`, so all three agree. |
+| D10 | 2026-11-14 | Terraform creates the two key secrets with a **write-only placeholder** (`value_wo`); the real keys are uploaded by hand as new versions. | A role assignment needs its scope to exist: this keeps the runtime identity's Key Vault Secrets User role on the two secrets only, not on the vault, while no key, and not even the placeholder, reaches the Terraform state (`value_wo` is stored as null). Needs Terraform 1.11 or later. |
+| D11 | 2026-11-14 | The optional `infra` identity (a workflow running this Terraform) comes with that workflow in Phase 6, not in Phase 2. | Nothing uses it before then. |
 
 ## Open
 
