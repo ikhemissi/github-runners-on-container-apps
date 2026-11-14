@@ -1,0 +1,23 @@
+[project]
+name = "github-runners-on-container-apps"
+version = "0.1.0"
+description = "Can ephemeral, single-use GitHub Actions runners on Azure Container Apps jobs run a private repository's workflows (up to about 3 hours) securely, without PATs or stored secrets, at zero idle cost?"
+requires-python = ">=3.13"
+dependencies = [
+    "azure-identity>=1.27.0",
+    "openai>=3.42.0",
+    "python-dotenv>=1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+    "ruff>=0.17.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
