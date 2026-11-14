@@ -51,6 +51,6 @@ Registers a real JIT runner on the target repository, without Azure. The reposit
    ```
 
 4. **Start one runner:** `make run-local GH_REGISTRAR_KEY_FILE=/path/to/registrar.pem`. It appears under the repository's Settings → Actions → Runners, idle.
-5. **Run a job on it:** copy [smoke-test.yml](../examples/target-repository/.github/workflows/smoke-test.yml) into the target repository and run it (Actions → *Smoke test of the ephemeral runners* → Run workflow). The runner takes the job, then exits and disappears from the list.
+5. **Run a job on it:** copy [smoke-test.yml](../examples/target-repository/.github/workflows/smoke-test.yml) (and [actionlint.yaml](../examples/target-repository/.github/actionlint.yaml) if the repository runs actionlint) into the target repository's default branch and run it (Actions → *Smoke test of the ephemeral runners* → Run workflow). The runner takes the job, then exits and disappears from the list.
 
 Container actions and `services:` don't work on these runners: the image has no Docker daemon.

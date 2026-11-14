@@ -1,0 +1,4 @@
+# Copy next to the workflows: declares the runners' custom label, so actionlint accepts `runs-on: aca-agent`.
+self-hosted-runner:
+  labels:
+    - aca-agent
