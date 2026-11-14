@@ -1,0 +1,22 @@
+# Checks of this repository, on GitHub-hosted runners (free for a public repository). Never on the self-hosted
+# runners: they serve a private repository only (docs/DECISIONS.md, D8).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  runner-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Lint (shellcheck, hadolint)
+        run: make lint CONTAINER=docker
+      - name: Build the image, start its tools, run the entrypoint's tests
+        run: make test CONTAINER=docker

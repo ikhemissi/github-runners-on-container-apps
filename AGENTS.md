@@ -26,6 +26,13 @@ This repository is a **spike**: it answers questions by experiment, within a tim
 - **One Terraform root** (`infra/`, one state), one file per part of the architecture. The files from shared building blocks (`container-apps-environment.tf`, `container-registry.tf`, `key-vault.tf`, `monitoring.tf`, `main.tf`, `providers.tf`, …), the modules in `infra/modules/` and the hook steps in `infra/hooks/<event>/` stay as they are, so that their improvements can be merged in later. Put the spike's own resources in a new file of `infra/` (calling a module of `infra/modules/` where one fits), its settings as variables mapped in `infra/main.tfvars.json`, its outputs as azd values, and its steps in `infra/hooks/<event>/NN-<name>.sh`.
 - **Before every `azd provision`:** `azd provision --preview` (one plan for the whole root) and read it: only expected adds and changes, no unexpected destroy. Module tests: `terraform init -backend=false && terraform test` in `infra/modules/<module>`.
 
+## Runner image
+
+- `runner/` holds the image (`Dockerfile`) and `entrypoint.sh`. Pin every version (base image by digest, tools with checksums); never print or store a token, key or JIT configuration.
+- Checks: `make lint` (shellcheck, hadolint) and `make test` (builds the image with Podman, starts its tools, runs the entrypoint's offline tests in it). CI runs both.
+- Workflows that run on the self-hosted runners go to `examples/target-repository/`, never to this public repository's `.github/workflows/`.
+- Requirements: `docs/prd/PRD-001-ephemeral-runners.md`; record any departure from it in `docs/DECISIONS.md`.
+
 ## Code humans can maintain
 
 Everything here must be maintainable by human developers, whoever (or whatever) wrote it. A developer new to the project understands a module in minutes and changes it with confidence.

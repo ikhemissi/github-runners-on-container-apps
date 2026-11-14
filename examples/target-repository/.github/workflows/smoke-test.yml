@@ -1,0 +1,26 @@
+# Copy into the private repository the runners serve. Runs one job on an ephemeral runner and shows what it is.
+# Phase 5 adds the Azure sign-in through OIDC.
+name: Smoke test of the ephemeral runners
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: [self-hosted, aca-agent]
+    timeout-minutes: 10
+    steps:
+      - name: Runner
+        run: |
+          echo "Runner: $RUNNER_NAME ($RUNNER_OS, $RUNNER_ARCH)"
+          echo "Tools: $(az version --query '"azure-cli"' -o tsv) / $(gh --version | head -1) / node $(node --version)"
+      - name: No identity variable reaches the steps
+        run: |
+          if env | grep -E '^(IDENTITY_|MSI_|KV_SECRET|AZURE_CLIENT_ID_RUNTIME|GH_REGISTRAR)'; then
+            echo "::error::a sensitive variable reached the job"
+            exit 1
+          fi
+          echo "None of the entrypoint's sensitive variables is set."
