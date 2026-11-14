@@ -1,5 +1,5 @@
-# The runner image: GitHub's official runner image, plus the Azure CLI, the GitHub CLI and Node LTS (curl, jq, openssl,
-# git and Python 3 are already in it), and the entrypoint that registers one just-in-time runner and runs one job.
+# The runner image: GitHub's official runner image, plus the Azure CLI, the GitHub CLI, Node LTS and uv (curl, jq,
+# openssl, git and Python 3.12 are already in it), and the entrypoint that registers one just-in-time runner and runs one job.
 # Every version is pinned; downloads are checked against their published checksums or signing key.
 # No Docker daemon: container actions and `services:` are not supported (docs/DECISIONS.md).
 FROM ghcr.io/actions/actions-runner:2.338.2@sha256:6d0b2d80d80f143f77dcb676e50920100bbb547e39e883454d57f45ab8c31300
@@ -7,6 +7,8 @@ FROM ghcr.io/actions/actions-runner:2.338.2@sha256:6d0b2d80d80f143f77dcb676e5092
 ARG AZURE_CLI_VERSION=2.92.0-1~noble
 ARG GH_CLI_VERSION=2.104.0
 ARG GH_CLI_SHA256=f90d578cbc4c3b067dfc4a1a540cef41faef64eebfb280b548ab32455977a21f
+ARG UV_VERSION=0.13.8
+ARG UV_SHA256=5acfd9177cfecf0bf87578f059728215ccc884388988f55f7a65041b57387d91
 ARG NODE_VERSION=26.13.1
 # Node needs libatomic, which the base image lacks.
 ARG LIBATOMIC_VERSION=14.2.0-4ubuntu2~24.04.1
@@ -44,7 +46,14 @@ RUN apt-get update \
  && tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 --no-same-owner \
  && rm /tmp/node.tar.gz
 
-COPY --chmod=0755 entrypoint.sh /usr/local/bin/runner-entrypoint.sh
+# uv from its release, checked against the published checksum; it uses the image's Python 3.12 or installs others.
+RUN curl -fsSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/uv.tar.gz \
+ && echo "${UV_SHA256}  /tmp/uv.tar.gz" | sha256sum --check --strict \
+ && tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner \
+ && rm /tmp/uv.tar.gz
+
+# Copied with its mode from git (0755): ACR Tasks builds without BuildKit, which COPY --chmod needs.
+COPY entrypoint.sh /usr/local/bin/runner-entrypoint.sh
 
 USER 1001
 ENTRYPOINT ["/usr/local/bin/runner-entrypoint.sh"]

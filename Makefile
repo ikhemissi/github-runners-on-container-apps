@@ -13,7 +13,7 @@ build:  ## the runner image, for linux/amd64
 	$(CONTAINER) build --platform linux/amd64 -t $(IMAGE) runner
 
 test: build  ## the added tools start, and the entrypoint's offline tests pass, in the image
-	$(CONTAINER) run --rm --entrypoint bash $(IMAGE) -c 'az version --output none && gh --version && node --version && npm --version'
+	$(CONTAINER) run --rm --entrypoint bash $(IMAGE) -c 'az version --output none && gh --version && node --version && npm --version && uv --version && uv python find 3.12'
 	$(CONTAINER) run --rm --entrypoint bash -v "$(CURDIR)/runner:/tests:ro,Z" $(IMAGE) /tests/tests/test-entrypoint.sh
 
 run-local: build  ## register one JIT runner from this machine (local test mode, runner/README.md); needs runner/.env
