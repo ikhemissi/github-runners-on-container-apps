@@ -1,0 +1,34 @@
+# Domains the runners may reach through the egress proxy, one per line. A leading dot also matches every subdomain;
+# never list a domain together with one of its subdomains (Squid drops the overlap with a warning).
+# Add a domain when the proxy's log shows a request a workflow needs denied (docs/OPERATIONS.md), under who needs it.
+
+# GitHub Actions: jobs, actions, logs, artifacts, caches, OIDC tokens, release downloads and GitHub Packages
+# (docs.github.com: self-hosted runners reference, "Accessible domains by function").
+.github.com
+.githubusercontent.com
+.blob.core.windows.net
+ghcr.io
+
+# Python: PyPI for uv and pip (uv downloads Python builds from GitHub releases, above).
+pypi.org
+files.pythonhosted.org
+
+# Node: npm and npx, Node downloads.
+registry.npmjs.org
+nodejs.org
+
+# Go: actions/setup-go and modules.
+go.dev
+dl.google.com
+proxy.golang.org
+sum.golang.org
+
+# Ubuntu packages (the runner image's apt sources).
+archive.ubuntu.com
+security.ubuntu.com
+ppa.launchpadcontent.net
+
+# Azure: the runner's Key Vault read, and workflow steps signed in through OIDC.
+.vault.azure.net
+login.microsoftonline.com
+management.azure.com

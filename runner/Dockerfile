@@ -52,6 +52,11 @@ RUN curl -fsSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/
  && tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner \
  && rm /tmp/uv.tar.gz
 
+# sudo keeps the proxy settings, so that `sudo apt-get` in a step also goes through the egress proxy (docs/DECISIONS.md, D20).
+# Appended to /etc/sudoers: the base image's sudoers doesn't read /etc/sudoers.d.
+RUN echo 'Defaults env_keep += "HTTP_PROXY HTTPS_PROXY NO_PROXY http_proxy https_proxy no_proxy"' >> /etc/sudoers \
+ && visudo --check --quiet
+
 # Copied with its mode from git (0755): ACR Tasks builds without BuildKit, which COPY --chmod needs.
 COPY entrypoint.sh /usr/local/bin/runner-entrypoint.sh
 

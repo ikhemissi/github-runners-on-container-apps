@@ -187,6 +187,14 @@ resource "azurerm_container_app_job" "runner" {
         name  = "AZURE_CLIENT_ID_RUNTIME"
         value = azurerm_user_assigned_identity.runner_runtime.client_id
       }
+      # With the egress proxy, its address for the runner and the steps (egress-proxy.tf); none otherwise.
+      dynamic "env" {
+        for_each = local.runner_proxy_env
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
     }
   }
 

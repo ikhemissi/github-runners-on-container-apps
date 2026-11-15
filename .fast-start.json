@@ -17,7 +17,8 @@
     "monitoring",
     "container-apps-environment",
     "container-registry",
-    "key-vault"
+    "key-vault",
+    "network"
   ],
   "answers": {
     "project_name": "github-runners-on-container-apps",
