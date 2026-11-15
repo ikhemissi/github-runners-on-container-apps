@@ -19,10 +19,14 @@ Where the build departs from [PRD-001](prd/PRD-001-ephemeral-runners.md) or fill
 | D13 | 2026-11-14 | Jobs needing Docker or Podman (e.g. a dev-container build) stay on GitHub-hosted runners. | In the job, Podman found no `/dev/fuse`, no user namespaces and cgroups v1 (experiment 03). |
 | D14 | 2026-11-14 | The image includes uv (0.13.8); the system Python is 3.12. | The target repository's jobs need uv with Python 3.12. |
 | D15 | 2026-11-14 | The scale rule uses `enableEtags=false`, and the entrypoint removes a runner that gets no job within `RUNNER_IDLE_TIMEOUT` (300 s). | With ETags the scaler counted one queued job twice and kept counting a completed run, so idle executions restarted every six minutes (experiment 04). Without them, a few hundred more API calls an hour, far below the App's limit. The watchdog covers cancelled runs and any double count left (KEDA counts runs from two requests without removing duplicates). |
+| D16 | 2026-11-15 | The federated credential's subject is a setting (`RUNNER_DEPLOYER_OIDC_SUBJECT`), read from a real token's claims. | The target repository's tokens carry `repo:<owner>@<owner id>/<repo>@<repo id>:environment:<environment>`, not the classic `repo:<owner>/<repo>:…` the default assumes (experiment 05). |
+| D17 | 2026-11-15 | The GitHub environment `azure-dev` accepts the `main` branch only. | Any branch's workflow could otherwise sign in as the deployer identity. |
+| D18 | 2026-11-15 | The Copilot cloud agent stays on GitHub-hosted runners for now. | On self-hosted runners its integrated firewall must be turned off, and these runners have open outbound access until private networking (Phase 6) brings egress control. |
+| D19 | 2026-11-15 | A monthly budget on the resource group, alerting the resource group's Owners (`contact_roles`), its amount a setting (`BUDGET_AMOUNT`, 0 for none). | Alerts reach the owner without an e-mail address in any file or setting; a budget alerts and stops nothing. |
 
 ## Open
 
 - **Passwordless sudo:** the official image gives the `runner` user passwordless `sudo`, so job steps can become root in the container. Many actions rely on it (package installs). Even as root, a step found no identity header and got 403 from the endpoint (experiment 03); kept.
 - **Image size:** 2.5 GB (775 MB compressed): pulled in 15 s, 36 s from an execution's start to its job (experiment 03). Not worth slimming for now.
-- **Copilot cloud agent:** GitHub recommends ephemeral, single-use runners for it, which these are. Its firewall on self-hosted runners is still to check.
+- **Copilot cloud agent:** GitHub recommends ephemeral, single-use runners for it, which these are, and requires its integrated firewall off on self-hosted runners: deferred to Phase 6 (D18).
 - **Self-hosted runner billing:** self-hosted minutes don't use the included minutes; a per-minute platform charge announced for private repositories was postponed (to recheck on GitHub's billing page before relying on it).

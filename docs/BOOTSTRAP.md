@@ -43,3 +43,23 @@ shred -u /path/to/registrar.pem   # once the runners work from Key Vault
 Your own account writes the secrets as *Key Vault Secrets Officer* (granted by Terraform to the deployer).
 
 **Key rotation:** generate a second key in the App's settings, upload it as above (a new version), check that a job still runs, then delete the old key in GitHub. Both Apps accept several active keys.
+
+## 4. Azure sign-in from workflows (Phase 5)
+
+1. In the target repository, create the environment and its variables (not secrets), and accept the `main` branch only:
+
+   ```bash
+   repo=<owner>/<repository>
+   gh api -X PUT repos/$repo/environments/azure-dev
+   gh variable set AZURE_CLIENT_ID --repo $repo --env azure-dev --body "$(azd env get-value RUNNER_DEPLOYER_CLIENT_ID)"
+   gh variable set AZURE_TENANT_ID --repo $repo --env azure-dev --body "$(azd env get-value AZURE_TENANT_ID)"
+   gh variable set AZURE_SUBSCRIPTION_ID --repo $repo --env azure-dev --body "$(azd env get-value AZURE_SUBSCRIPTION_ID)"
+   ```
+
+2. Copy [print-oidc-claims.yml](../examples/target-repository/.github/workflows/print-oidc-claims.yml) and the [smoke test](../examples/target-repository/.github/workflows/smoke-test.yml) into it, and run *OIDC token claims*. If `sub` differs from `azd env get-value RUNNER_OIDC_SUBJECT_IN_USE` (repositories may use the format with immutable IDs), `azd env set RUNNER_DEPLOYER_OIDC_SUBJECT "<sub>"` and `azd provision`.
+3. Run the smoke test: its last step shows the subscription, signed in without a secret.
+4. Restrict the environment to `main` (Settings → Environments → azure-dev → Deployment branches).
+
+## 5. Budget (Phase 6)
+
+`azd env set BUDGET_AMOUNT <amount per month>` then `azd provision`: alerts go to the resource group's Owners.

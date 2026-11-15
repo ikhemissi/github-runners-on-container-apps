@@ -29,3 +29,9 @@ No personal access token, client secret, registry admin user or storage key exis
 
 - Private repository only; workflows from forks must not run on these runners (repository setting, and `if:` guards).
 - `permissions:` least privilege in every workflow (`contents: read`; `id-token: write` only where OIDC is used); third-party actions pinned by commit SHA.
+
+## Azure sign-in from workflows (Phase 5)
+
+- Workflow steps sign in as the `deployer` identity through GitHub OIDC: a federated credential trusts the tokens of the target repository's `azure-dev` environment only, and that environment accepts the `main` branch only. No client secret exists.
+- The `deployer` identity is never attached to the job, and its role is Reader on one resource group by default (`RUNNER_DEPLOYER_SCOPE`, `RUNNER_DEPLOYER_ROLE`).
+- A monthly budget alerts the resource group's Owners at 80 % of the actual spend and 100 % of the forecast.

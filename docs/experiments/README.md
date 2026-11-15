@@ -9,3 +9,4 @@ Numbered in the order they run; never renumbered. Copy [TEMPLATE.md](TEMPLATE.md
 | 02 | [The Terraform foundation](02-terraform-foundation.md) | PRD Phase 2 | done: 18 resources, no drift, roles on the two secrets only, no secret in the state |
 | 03 | [The job, started by hand](03-job-started-by-hand.md) | Q2, Q5, Q8 | done: 36 s start to job, identity endpoint 403 from a step, Podman blocked |
 | 04 | [Event-driven scaling](04-event-scaling.md) | Q3, Q4, Q6 | done: 0 → 0, 1 → 1, 4 → 3 + 1 once ETags are off; idle watchdog |
+| 05 | [Azure sign-in through OIDC, and a budget](05-oidc-and-budget.md) | Q7, Q9 | done: sign-in without a secret (subject with immutable IDs); budget 50 a month |
