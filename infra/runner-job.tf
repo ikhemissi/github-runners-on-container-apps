@@ -87,7 +87,9 @@ resource "azurerm_container_app_job" "runner" {
   resource_group_name          = azurerm_resource_group.main.name
   location                     = var.location
   container_app_environment_id = module.container_apps_environment.id
-  replica_timeout_in_seconds   = var.runner_replica_timeout_in_seconds
+  # The environment has workload profiles: the service sets this one, so the plan stays clean.
+  workload_profile_name      = "Consumption"
+  replica_timeout_in_seconds = var.runner_replica_timeout_in_seconds
   # A retried execution would register a second runner for the same queued job.
   replica_retry_limit = 0
   tags                = local.tags

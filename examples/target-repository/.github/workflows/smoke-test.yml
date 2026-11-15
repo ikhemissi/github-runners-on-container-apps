@@ -1,5 +1,5 @@
 # Copy into the private repository the runners serve. Runs one job on an ephemeral runner and shows what it is.
-# Phase 5 adds the Azure sign-in through OIDC.
+# It also signs in to Azure through GitHub OIDC, as the deployer identity, without any secret.
 name: Smoke test of the ephemeral runners
 
 on:
@@ -7,12 +7,16 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # the OIDC token for the Azure sign-in
 
 jobs:
   smoke-test:
     # A JIT runner carries only the labels it was registered with (no self-hosted, Linux, X64): docs/DECISIONS.md D9.
     runs-on: aca-agent
     timeout-minutes: 10
+    # The deployer identity trusts this environment's tokens; its variables hold the identity's client ID, the
+    # tenant and the subscription (not secrets).
+    environment: azure-dev
     steps:
       - name: Runner
         run: |
@@ -38,3 +42,18 @@ jobs:
             echo "::error::a job step can get a token for the runtime identity"
             exit 1
           fi
+      - name: OIDC token claims (the claims only, never the token)
+        run: |
+          token=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq -r .value)
+          payload=$(cut -d. -f2 <<<"$token" | tr '_-' '/+')
+          while ((${#payload} % 4)); do payload+="="; done
+          base64 -d <<<"$payload" | jq '{sub, aud, iss, repository, environment, ref}'
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Signed in to Azure without a secret
+        run: |
+          az account show --query "{subscription: name, signedInAs: user.type}" --output table
