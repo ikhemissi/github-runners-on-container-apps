@@ -8,8 +8,11 @@ module "key_vault" {
   location                   = var.location
   tags                       = local.tags
   secrets_officer_object_ids = [data.azurerm_client_config.current.object_id]
-  private_endpoint_subnet_id = lookup(local.network.subnet_ids, "private-endpoints", null)
-  private_dns_zone_ids       = local.network.private_dns_zone_ids
+  # With a private endpoints subnet (network.tf), a private endpoint registered in Key Vault's private DNS zone.
+  private_endpoint = contains(keys(local.network.subnet_ids), "private-endpoints") ? {
+    subnet_id           = local.network.subnet_ids["private-endpoints"]
+    private_dns_zone_id = local.network.private_dns_zone_ids["privatelink.vaultcore.azure.net"]
+  } : null
 }
 
 output "KEY_VAULT_ID" { value = module.key_vault.id }

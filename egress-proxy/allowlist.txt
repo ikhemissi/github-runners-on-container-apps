@@ -9,9 +9,13 @@
 .blob.core.windows.net
 ghcr.io
 
-# Python: PyPI for uv and pip (uv downloads Python builds from GitHub releases, above).
+# Python: PyPI for uv and pip, and uv's own downloads (Python builds, uv releases for astral-sh/setup-uv).
 pypi.org
 files.pythonhosted.org
+releases.astral.sh
+
+# Jupyter Book (MyST): site templates.
+api.mystmd.org
 
 # Node: npm and npx, Node downloads.
 registry.npmjs.org

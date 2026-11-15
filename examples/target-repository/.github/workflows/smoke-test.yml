@@ -42,6 +42,21 @@ jobs:
             echo "::error::a job step can get a token for the runtime identity"
             exit 1
           fi
+      - name: Egress goes through the allowlist proxy (when the runners have one)
+        # With the egress proxy (docs/DECISIONS.md, D20): an allowlisted domain answers, the proxy refuses any other
+        # domain, and the internet can't be reached without the proxy (pypi.org: GitHub's API addresses are open to the
+        # scaler, so they don't show it). Without a proxy, the step only says so.
+        run: |
+          if [[ -z "${HTTPS_PROXY:-}" ]]; then echo "No egress proxy: direct internet access."; exit 0; fi
+          allowed=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 https://api.github.com/zen || true)
+          refused=$(curl -s -o /dev/null -w '%{http_connect}' --max-time 15 https://example.com/ || true)
+          direct=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 --noproxy '*' https://pypi.org/simple/ || true)
+          echo "Through the proxy: allowlisted domain HTTP $allowed, other domain refused with $refused"
+          echo "Without the proxy: HTTP $direct (000: no connection)"
+          if [[ "$allowed" != 200 || "$refused" != 403 || "$direct" != 000 ]]; then
+            echo "::error::egress is not limited to the allowlist"
+            exit 1
+          fi
       - name: OIDC token claims (the claims only, never the token)
         run: |
           token=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \

@@ -4,11 +4,11 @@
 # static IP address.
 
 resource "azurerm_container_app_environment" "main" {
-  name                           = var.name
-  resource_group_name            = var.resource_group_name
-  location                       = var.location
-  logs_destination               = "azure-monitor"
-  infrastructure_subnet_id       = var.subnet_id
+  name                     = var.name
+  resource_group_name      = var.resource_group_name
+  location                 = var.location
+  logs_destination         = "azure-monitor"
+  infrastructure_subnet_id = var.subnet_id
   # Set only when true: the provider rejects the argument, even false, without a subnet.
   internal_load_balancer_enabled = var.internal ? true : null
   tags                           = var.tags

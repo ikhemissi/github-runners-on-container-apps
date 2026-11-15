@@ -37,7 +37,8 @@ locals {
 
   # Outbound traffic the Container Apps platform needs from the runners' subnet (learn.microsoft.com: "Securing a
   # virtual network in Azure Container Apps", workload profiles environment), all on port 443. Container Registry and
-  # the region's Storage serve the image layers.
+  # the region's Storage serve the image layers. Key Vault in the region: the platform reads the job's Key Vault
+  # reference (the Scaler App's key) from this subnet; without it, creating the job fails (experiment 06).
   runner_platform_rules = [
     { priority = 100, name = "AllowMicrosoftContainerRegistry", service_tag = "MicrosoftContainerRegistry" },
     { priority = 110, name = "AllowAzureFrontDoorFirstParty", service_tag = "AzureFrontDoor.FirstParty" },
@@ -45,7 +46,33 @@ locals {
     { priority = 130, name = "AllowAzureMonitor", service_tag = "AzureMonitor" },
     { priority = 140, name = "AllowAzureContainerRegistry", service_tag = "AzureContainerRegistry" },
     { priority = 150, name = "AllowStorageInRegion", service_tag = "Storage.${var.location}" },
+    { priority = 160, name = "AllowKeyVaultInRegion", service_tag = "AzureKeyVault.${var.location}" },
   ]
+}
+
+# The scale rule's KEDA scaler runs in the runners' environment and calls the GitHub API directly (it can't use the
+# proxy): the NSG allows GitHub's API addresses, as GitHub publishes them, read at each plan (experiment 06).
+data "http" "github_meta" {
+  count = var.enable_egress_proxy ? 1 : 0
+  url   = "https://api.github.com/meta"
+
+  request_headers = {
+    Accept = "application/vnd.github+json"
+  }
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Could not read GitHub's addresses from https://api.github.com/meta."
+    }
+  }
+}
+
+locals {
+  # IPv4 only: the subnet has no IPv6.
+  github_api_addresses = var.enable_egress_proxy ? [
+    for prefix in jsondecode(data.http.github_meta[0].response_body).api : prefix if !strcontains(prefix, ":")
+  ] : []
 }
 
 resource "azurerm_network_security_group" "runners" {
@@ -68,6 +95,18 @@ resource "azurerm_network_security_group" "runners" {
       destination_address_prefix = security_rule.value.service_tag
       destination_port_range     = "443"
     }
+  }
+
+  security_rule {
+    name                         = "AllowGitHubApi"
+    priority                     = 200
+    direction                    = "Outbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_address_prefix        = "VirtualNetwork"
+    source_port_range            = "*"
+    destination_address_prefixes = local.github_api_addresses
+    destination_port_range       = "443"
   }
 
   # Everything else to the internet; the virtual network (the proxy) stays reachable through the default rules.
