@@ -32,10 +32,16 @@ check "an IP address is denied, even one of an allowlisted domain" test "$(statu
 check "an allowlisted domain on another port is denied" test "$(status_through_proxy https://api.github.com:8443/)" = 403
 check "a look-alike domain is denied" test "$(status_through_proxy https://github.com.example.com/)" = 403
 
-sleep 1
-logs=$("$CONTAINER" logs "$NAME" 2>&1)
-check "the allowed request is logged" grep -q "TCP_TUNNEL/200 CONNECT api.github.com:443" <<<"$logs"
-check "the denied request is logged" grep -q "TCP_DENIED/403 CONNECT example.com:443" <<<"$logs"
+# logged <text>: the proxy's output shows the line within 15 s (Squid's log daemon writes in batches).
+logged() {
+  for _ in {1..30}; do
+    "$CONTAINER" logs "$NAME" 2>&1 | grep -q "$1" && return 0
+    sleep 0.5
+  done
+  return 1
+}
+check "the allowed request is logged" logged "TCP_TUNNEL/200 CONNECT api.github.com:443"
+check "the denied request is logged" logged "TCP_DENIED/403 CONNECT example.com:443"
 
 if ((failures > 0)); then echo "$failures check(s) failed"; exit 1; fi
 echo "All checks passed"
