@@ -50,10 +50,10 @@ sequenceDiagram
     K->>J: start one execution (polled every 30 s)
     J->>KV: read the Registrar App's key (managed identity)
     J->>GH: installation token, then generate-jitconfig
-    J->>GH: run.sh --jitconfig: takes the one job
+    J->>GH: run.sh --jitconfig, takes the one job
     J->>P: the job's downloads, allowlisted domains only
     J-->>GH: job done, runner removed
-    Note over J: the execution exits; nothing runs until the next job
+    Note over J: the execution exits, nothing runs until the next job
 ```
 
 - **Two GitHub Apps, no personal access token:** a Scaler App (Actions: read) for KEDA, its key a Key Vault-referenced secret of the job; a Registrar App (Administration: write, one repository) for the [entrypoint](runner/entrypoint.sh), which clears every identity variable before the runner starts.
