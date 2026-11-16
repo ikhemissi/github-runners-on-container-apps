@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Ephemeral GitHub Actions runners on Azure Container Apps</title>
+  <desc id="desc">A private GitHub repository queues CI jobs and Copilot cloud agent sessions with the label aca-agent. In one Azure resource group, the KEDA github-runner rule counts them and starts one Container Apps job execution per job. Each execution reads a GitHub App's key from Key Vault with its managed identity, registers a just-in-time runner that takes one job, then exits. The runners reach the internet only through an egress proxy with a domain allowlist.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3d4466"/>
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#138a7a"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1b1f3b" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <style>
+    text { fill: #1b1f3b; }
+    .title { font-size: 34px; font-weight: 700; }
+    .subtitle { font-size: 18px; fill: #4a5072; }
+    .name { font-size: 18px; font-weight: 700; }
+    .group { font-size: 16px; font-weight: 700; fill: #0b5cad; }
+    .kind { font-size: 14px; fill: #4a5072; }
+    .note { font-size: 13px; fill: #5b4fd6; font-weight: 600; }
+    .edge { font-size: 13px; fill: #3d4466; font-weight: 600; }
+    .item { font-size: 15px; font-weight: 700; }
+    .runner { font-size: 14px; font-weight: 700; fill: #5b4fd6; }
+    .chip { font-size: 14px; font-weight: 600; fill: #1b1f3b; }
+    .footer { font-size: 14px; fill: #4a5072; }
+    .egress { font-size: 13px; fill: #138a7a; font-weight: 600; }
+  </style>
+
+  <rect width="1200" height="675" fill="#f7f8fc"/>
+
+  <text class="title" x="48" y="66">Ephemeral GitHub runners on Azure Container Apps</text>
+  <text class="subtitle" x="48" y="98">One queued job, one single-use runner: started by KEDA, registered just in time, gone when the job ends.</text>
+
+  <!-- GitHub -->
+  <g filter="url(#shadow)">
+    <rect x="48" y="170" width="208" height="350" rx="12" fill="#ffffff" stroke="#3d4466" stroke-width="1.5"/>
+  </g>
+  <text class="name" x="152" y="204" text-anchor="middle">GitHub</text>
+  <text class="kind" x="152" y="226" text-anchor="middle">private repository</text>
+  <rect x="62" y="246" width="180" height="58" rx="10" fill="#f7f8fc" stroke="#c9cde3"/>
+  <text class="item" x="152" y="270" text-anchor="middle">CI jobs</text>
+  <text class="kind" x="152" y="291" text-anchor="middle">runs-on: aca-agent</text>
+  <rect x="62" y="316" width="180" height="58" rx="10" fill="#f7f8fc" stroke="#c9cde3"/>
+  <text class="item" x="152" y="340" text-anchor="middle">Copilot cloud agent</text>
+  <text class="kind" x="152" y="361" text-anchor="middle">sessions on Actions</text>
+  <rect x="62" y="386" width="180" height="58" rx="10" fill="#f7f8fc" stroke="#c9cde3"/>
+  <text class="item" x="152" y="410" text-anchor="middle">Two GitHub Apps</text>
+  <text class="kind" x="152" y="431" text-anchor="middle">scaler · registrar</text>
+  <text class="note" x="152" y="490" text-anchor="middle">no personal access token</text>
+
+  <!-- Azure resource group -->
+  <rect x="318" y="134" width="622" height="406" rx="16" fill="#eef5fc" stroke="#0078d4" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text class="group" x="338" y="162">Azure · one resource group · Terraform + azd</text>
+
+  <!-- KEDA scale rule -->
+  <g filter="url(#shadow)">
+    <rect x="348" y="186" width="240" height="84" rx="12" fill="#fff6ea" stroke="#e08a1e" stroke-width="2"/>
+  </g>
+  <text class="name" x="468" y="219" text-anchor="middle">KEDA github-runner</text>
+  <text class="kind" x="468" y="242" text-anchor="middle">counts the queued jobs</text>
+
+  <!-- Container Apps job -->
+  <g filter="url(#shadow)">
+    <rect x="348" y="312" width="240" height="206" rx="12" fill="#efedff" stroke="#5b4fd6" stroke-width="2"/>
+  </g>
+  <text class="name" x="468" y="342" text-anchor="middle">Container Apps job</text>
+  <text class="kind" x="468" y="363" text-anchor="middle">event trigger · 0 when idle</text>
+  <rect x="368" y="378" width="200" height="34" rx="17" fill="#ffffff" stroke="#5b4fd6" stroke-width="1.5"/>
+  <text class="runner" x="468" y="400" text-anchor="middle">JIT runner · one job</text>
+  <rect x="368" y="420" width="200" height="34" rx="17" fill="#ffffff" stroke="#5b4fd6" stroke-width="1.5"/>
+  <text class="runner" x="468" y="442" text-anchor="middle">JIT runner · one job</text>
+  <rect x="368" y="462" width="200" height="34" rx="17" fill="#ffffff" stroke="#5b4fd6" stroke-width="1.5"/>
+  <text class="runner" x="468" y="484" text-anchor="middle">JIT runner · one job</text>
+
+  <!-- Key Vault -->
+  <g filter="url(#shadow)">
+    <rect x="660" y="186" width="250" height="84" rx="12" fill="#ffffff" stroke="#3d4466" stroke-width="1.5"/>
+  </g>
+  <text class="name" x="785" y="219" text-anchor="middle">Key Vault</text>
+  <text class="kind" x="785" y="242" text-anchor="middle">the Apps' keys · a role per secret</text>
+
+  <!-- Container registry -->
+  <g filter="url(#shadow)">
+    <rect x="660" y="296" width="250" height="76" rx="12" fill="#ffffff" stroke="#3d4466" stroke-width="1.5"/>
+  </g>
+  <text class="name" x="785" y="327" text-anchor="middle">Container Registry</text>
+  <text class="kind" x="785" y="350" text-anchor="middle">runner image · AcrPull</text>
+
+  <!-- Egress proxy -->
+  <g filter="url(#shadow)">
+    <rect x="660" y="398" width="250" height="120" rx="12" fill="#e7f6f3" stroke="#138a7a" stroke-width="2"/>
+  </g>
+  <text class="name" x="785" y="429" text-anchor="middle">Egress proxy</text>
+  <text class="kind" x="785" y="451" text-anchor="middle">Squid · domain allowlist</text>
+  <text class="egress" x="785" y="477" text-anchor="middle">direct internet denied</text>
+  <text class="egress" x="785" y="498" text-anchor="middle">every request logged</text>
+
+  <!-- Allowlisted internet -->
+  <g filter="url(#shadow)">
+    <rect x="970" y="410" width="182" height="96" rx="12" fill="#ffffff" stroke="#3d4466" stroke-width="1.5"/>
+  </g>
+  <text class="name" x="1061" y="441" text-anchor="middle">Allowed sites</text>
+  <text class="kind" x="1061" y="463" text-anchor="middle">GitHub · Copilot</text>
+  <text class="kind" x="1061" y="484" text-anchor="middle">PyPI · npm · Go</text>
+
+  <!-- Arrows -->
+  <line x1="256" y1="228" x2="346" y2="228" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
+  <text class="edge" x="287" y="218" text-anchor="middle">queued</text>
+  <line x1="468" y1="270" x2="468" y2="310" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
+  <text class="edge" x="458" y="295" text-anchor="end">one per job</text>
+  <line x1="588" y1="228" x2="658" y2="228" stroke="#3d4466" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text class="edge" x="623" y="218" text-anchor="middle">key</text>
+  <line x1="588" y1="330" x2="658" y2="262" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
+  <text class="edge" x="610" y="286" text-anchor="middle" transform="rotate(-44 610 286)">identity</text>
+  <line x1="658" y1="346" x2="592" y2="392" stroke="#3d4466" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="346" y1="440" x2="258" y2="440" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
+  <text class="edge" x="287" y="430" text-anchor="middle">JIT</text>
+  <line x1="588" y1="458" x2="658" y2="458" stroke="#138a7a" stroke-width="2.5" marker-end="url(#arrow-teal)"/>
+  <line x1="910" y1="458" x2="968" y2="458" stroke="#138a7a" stroke-width="2.5" marker-end="url(#arrow-teal)"/>
+
+  <!-- Standards -->
+  <text class="footer" x="48" y="574" font-weight="700" fill="#1b1f3b">Built on</text>
+  <g>
+    <rect x="48" y="586" width="122" height="34" rx="17" fill="#ffffff" stroke="#c9cde3"/>
+    <text class="chip" x="109" y="608" text-anchor="middle">GitHub Apps</text>
+    <rect x="180" y="586" width="178" height="34" rx="17" fill="#ffffff" stroke="#c9cde3"/>
+    <text class="chip" x="269" y="608" text-anchor="middle">Just-in-time runners</text>
+    <rect x="368" y="586" width="76" height="34" rx="17" fill="#ffffff" stroke="#c9cde3"/>
+    <text class="chip" x="406" y="608" text-anchor="middle">KEDA</text>
+    <rect x="454" y="586" width="172" height="34" rx="17" fill="#ffffff" stroke="#c9cde3"/>
+    <text class="chip" x="540" y="608" text-anchor="middle">Managed identities</text>
+    <rect x="636" y="586" width="150" height="34" rx="17" fill="#ffffff" stroke="#c9cde3"/>
+    <text class="chip" x="711" y="608" text-anchor="middle">OpenID Connect</text>
+    <rect x="796" y="586" width="152" height="34" rx="17" fill="#ffffff" stroke="#c9cde3"/>
+    <text class="chip" x="872" y="608" text-anchor="middle">Terraform + azd</text>
+  </g>
+  <text class="footer" x="48" y="652">No personal access token or stored secret · nothing runs while idle · workflow steps reach Azure through OIDC</text>
+</svg>
