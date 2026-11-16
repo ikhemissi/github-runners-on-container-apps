@@ -1,0 +1,21 @@
+# Trivy findings accepted on purpose, each with its reason (make test-infra and CI read this file).
+misconfigurations:
+  - id: AZU-0013
+    paths:
+      - "infra/modules/key-vault/main.tf"
+      - "modules/key-vault/main.tf"
+    statement: >-
+      Public network access with Entra authentication and RBAC on each secret: the platform, the KEDA scaler and the
+      deployer read the vault without a virtual network. PRIVATE_NETWORKING adds a private endpoint (docs/DECISIONS.md, D21).
+  - id: AZU-0016
+    paths:
+      - "infra/modules/key-vault/main.tf"
+      - "modules/key-vault/main.tf"
+    statement: >-
+      No purge protection: azd down followed by azd provision must reuse the vault's name. The vault holds only the
+      GitHub Apps' keys, which are regenerated in GitHub if lost.
+  - id: DS-0031
+    paths:
+      - "runner/Dockerfile"
+    statement: >-
+      MICROSOFT_KEY_FINGERPRINT is the public fingerprint of Microsoft's package signing key, not a secret.

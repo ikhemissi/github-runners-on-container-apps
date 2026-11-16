@@ -4,4 +4,7 @@ FROM ubuntu/squid:6.6-24.04_edge@sha256:8a3baed477e2c282ab8aa5edad442f6987324696
 
 COPY squid.conf allowlist.txt /etc/squid/
 
+# Squid's own user (it owns the log and spool folders), not root.
+USER proxy
+
 EXPOSE 3128

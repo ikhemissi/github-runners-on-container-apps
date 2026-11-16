@@ -7,7 +7,7 @@ HADOLINT_IMAGE = ghcr.io/hadolint/hadolint:v2.15.1
 REGISTRY_NAME = $(firstword $(subst ., ,$(shell azd env get-value AZURE_CONTAINER_REGISTRY_ENDPOINT)))
 TAG ?= $(shell git rev-parse --short HEAD)
 
-.PHONY: lint build test run-local build-proxy test-proxy push-runner push-proxy
+.PHONY: lint build test run-local build-proxy test-proxy test-infra push-runner push-proxy
 
 lint:  ## shellcheck and hadolint
 	shellcheck -x runner/entrypoint.sh runner/tests/test-entrypoint.sh egress-proxy/tests/test-proxy.sh
@@ -32,6 +32,15 @@ build-proxy:  ## the egress proxy image, for linux/amd64
 
 test-proxy: build-proxy  ## allowlisted domains pass through the proxy, others are denied (needs internet access)
 	egress-proxy/tests/test-proxy.sh $(CONTAINER) $(PROXY_IMAGE)
+
+test-infra:  ## Terraform offline: format, validation, tflint, Trivy (.trivyignore.yaml) and the tests with mock providers
+	terraform -chdir=infra fmt -check -recursive
+	terraform -chdir=infra init -backend=false -input=false >/dev/null
+	terraform -chdir=infra validate
+	cd infra && tflint --init >/dev/null && tflint --recursive --config "$$PWD/.tflint.hcl"
+	trivy config --quiet --exit-code 1 --severity MEDIUM,HIGH,CRITICAL --ignorefile .trivyignore.yaml .
+	terraform -chdir=infra test
+	for module in infra/modules/*/; do terraform -chdir="$$module" init -backend=false -input=false >/dev/null && terraform -chdir="$$module" test || exit 1; done
 
 push-runner:  ## build the runner image in the registry (ACR Tasks), tagged with the commit; then RUNNER_IMAGE_TAG=$(TAG)
 	az acr build --registry $(REGISTRY_NAME) --platform linux/amd64 --image gh-runner:$(TAG) runner
