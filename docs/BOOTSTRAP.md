@@ -63,3 +63,23 @@ Your own account writes the secrets as *Key Vault Secrets Officer* (granted by T
 ## 5. Budget (Phase 6)
 
 `azd env set BUDGET_AMOUNT <amount per month>` then `azd provision`: alerts go to the resource group's Owners.
+
+## 6. Images and egress control (Phase 6)
+
+The images are built in the project's registry (ACR Tasks: no local container engine needed), tagged with the current commit:
+
+```bash
+make push-runner && azd env set RUNNER_IMAGE_TAG "$(git rev-parse --short HEAD)"
+make push-proxy && azd env set EGRESS_PROXY_IMAGE_TAG "$(git rev-parse --short HEAD)"
+azd env set EGRESS_PROXY true
+azd provision --preview   # the first time: the runners' environment and job are replaced (about 25 min); no job may be running
+azd provision
+```
+
+Then run the smoke test: its egress step checks that an allowlisted domain answers, another is refused, and the internet can't be reached without the proxy.
+
+**The allowlist:** when a workflow fails on a download, the proxy's log shows the domain it was denied ([OPERATIONS](OPERATIONS.md), query 6). Add it to [allowlist.txt](../egress-proxy/allowlist.txt) under the tool that needs it, `make test-proxy`, commit, then `make push-proxy`, set `EGRESS_PROXY_IMAGE_TAG` and `azd provision` (an in-place update of the proxy).
+
+**Private networking:** `azd env set PRIVATE_NETWORKING true`, preview, provision: Key Vault gets a private endpoint (D21).
+
+**Tenant policies:** if your tenant's policies change resources that lack some tags, set them in `RESOURCE_TAGS` before the first provision. Every provision re-applies them, and public network access, to the Terraform state account.

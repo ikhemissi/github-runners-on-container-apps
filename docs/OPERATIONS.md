@@ -90,6 +90,20 @@ ContainerAppSystemLogs
 | order by TimeGenerated desc
 ```
 
+**Requests the egress proxy denied** (with `EGRESS_PROXY`), by host:
+
+```kusto
+// Requests the egress proxy denied, by host: each is a domain a workflow tried to reach (add it to the allowlist if needed).
+ContainerAppConsoleLogs
+| where ContainerAppName startswith "ca-egress-proxy"
+| extend fields = split(tostring(Log), " ")
+| where tostring(fields[2]) startswith "TCP_DENIED"
+| summarize requests = count(), lastSeen = max(TimeGenerated) by host = tostring(fields[4])
+| order by lastSeen desc
+```
+
+Expected and left denied: Azure CLI telemetry (`dc.services.visualstudio.com`). Lines `NONE_NONE/000` are connections closed without a request (health probes), not denials.
+
 ## When something looks wrong
 
 | Symptom | Check | Fix |
@@ -98,6 +112,9 @@ ContainerAppSystemLogs
 | Executions start with nothing queued | Query 5 above zero while idle | `enableEtags` must stay `false`; the watchdog ends each idle execution after `RUNNER_IDLE_TIMEOUT` |
 | A runner stays listed, offline | Settings → Actions → Runners of the target repository | Remove it there (`gh api -X DELETE repos/<owner>/<repo>/actions/runners/<id>`); look for its execution in query 3 |
 | Key Vault read fails at start (exit 2) | The key secret's latest version is the PEM, not the placeholder; the runtime identity's role on that secret | Upload the key again ([BOOTSTRAP](BOOTSTRAP.md#3-upload-the-keys-to-key-vault)) |
+| A workflow fails on a download, behind the proxy | Query 6: the domain denied at that time | Add it to the allowlist ([BOOTSTRAP](BOOTSTRAP.md#6-images-and-egress-control-phase-6)) |
+| No execution starts, behind the proxy | `KEDAScalerFailed` in `ContainerAppSystemLogs` (the scaler can't reach GitHub); the proxy app's replica is running | `azd provision` refreshes GitHub's API addresses in the network security group |
+| `azd provision` fails with 403 `AuthorizationFailure` on the state | The Terraform state account's public network access and tags | `azd hooks run preprovision` re-applies them ([BOOTSTRAP](BOOTSTRAP.md#6-images-and-egress-control-phase-6)) |
 | The budget alert arrives | Cost analysis of the resource group; query 1 and 2 for unusual volume or durations | Lower `RUNNER_MAX_EXECUTIONS`, find long or idle executions |
 
 Stop a running execution: `az containerapp job stop -n <job> -g <resource group> --job-execution-name <execution>`. Rotate a GitHub App key: [BOOTSTRAP](BOOTSTRAP.md#3-upload-the-keys-to-key-vault).

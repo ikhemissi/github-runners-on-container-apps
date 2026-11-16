@@ -28,7 +28,7 @@ Container Apps sets `IDENTITY_ENDPOINT`, `IDENTITY_HEADER` and `CONTAINER_APP_JO
 
 ```bash
 make lint   # shellcheck and hadolint
-make test   # builds the image, starts its tools, and runs the entrypoint's offline tests in it
+make test   # builds the image, starts its tools, checks sudo keeps the proxy settings, and runs the entrypoint's offline tests in it
 ```
 
 The tests ([tests/test-entrypoint.sh](tests/test-entrypoint.sh)) run the entrypoint against a fake of the managed identity endpoint, Key Vault and GitHub ([tests/fake_services.py](tests/fake_services.py)) and a stub `run.sh`. They check the JWT's signature and claims, the token's scope, the runner's labels, group and name, that no sensitive variable reaches the runner and no secret reaches the logs, the exit codes, and the retries.

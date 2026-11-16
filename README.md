@@ -6,7 +6,7 @@
 
 ## The setup
 
-A queued workflow job with the label `aca-agent` makes the KEDA scaler of an Azure Container Apps job start one execution. Its container registers one just-in-time runner for the repository, with a GitHub App installation token minted from a private key it reads in Key Vault through its managed identity. The runner takes that one job, then the container exits. With nothing queued, nothing runs. No personal access token or stored secret: the two GitHub Apps' keys live in Key Vault, and workflow steps reach Azure through GitHub OIDC with an identity the job never holds. Requirements: [PRD-001](docs/prd/PRD-001-ephemeral-runners.md); departures from it: [decisions](docs/DECISIONS.md); [security](docs/SECURITY.md).
+A queued workflow job with the label `aca-agent` makes the KEDA scaler of an Azure Container Apps job start one execution. Its container registers one just-in-time runner for the repository, with a GitHub App installation token minted from a private key it reads in Key Vault through its managed identity. The runner takes that one job, then the container exits. With nothing queued, nothing runs. No personal access token or stored secret: the two GitHub Apps' keys live in Key Vault, and workflow steps reach Azure through GitHub OIDC with an identity the job never holds. Optionally (`EGRESS_PROXY`), the runners reach the internet only through an allowlist proxy. Requirements: [PRD-001](docs/prd/PRD-001-ephemeral-runners.md); departures from it: [decisions](docs/DECISIONS.md); [security](docs/SECURITY.md).
 
 ```mermaid
 flowchart LR
@@ -18,6 +18,7 @@ flowchart LR
     execution -->|"run.sh --jitconfig: one job"| github
     registry["Container registry: runner image"] -->|"runtime identity (AcrPull)"| execution
     steps["Workflow steps"] -->|"GitHub OIDC, deployer identity"| azure["Azure resources"]
+    steps -.->|"optional: allowlist proxy only"| proxy["Egress proxy (Squid)"]
 ```
 
 The runner image and its tests: [runner/README.md](runner/README.md). Progress, phase by phase: [experiments](docs/experiments/README.md).
