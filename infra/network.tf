@@ -1,7 +1,8 @@
 # The virtual network, created only when a feature needs one: the egress proxy (egress-proxy.tf) puts the runners and
 # the proxy in their own subnets; private networking adds a private endpoint for Key Vault. Without either, every service
-# is reached over its public endpoint, with Entra authentication. Module calls read their subnet and private DNS zones
-# from local.network (subnet ids by role: "container-apps", "egress-proxy", "private-endpoints").
+# is reached over its public endpoint, with Entra authentication. Module calls read their subnet from local.network
+# (subnet ids by role: "container-apps", "egress-proxy", "private-endpoints") and their private endpoint from
+# local.private_endpoint, null or not according to the flag, so that it is known at plan time.
 
 variable "enable_private_networking" {
   description = "Give Key Vault a private endpoint in the virtual network (PRIVATE_NETWORKING). The vault stays reachable publicly, with Entra authentication, until every client (the deployer included) works from the network (docs/DECISIONS.md, D21)."
@@ -33,7 +34,10 @@ module "network" {
 
 locals {
   network = {
-    subnet_ids           = local.network_enabled ? module.network[0].subnet_ids : {}
-    private_dns_zone_ids = local.network_enabled ? module.network[0].private_dns_zone_ids : {}
+    subnet_ids = local.network_enabled ? module.network[0].subnet_ids : {}
   }
+  private_endpoint = var.enable_private_networking ? {
+    subnet_id            = module.network[0].subnet_ids["private-endpoints"]
+    private_dns_zone_ids = module.network[0].private_dns_zone_ids
+  } : null
 }

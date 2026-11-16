@@ -8,7 +8,7 @@ module "container_registry" {
   location            = var.location
   tags                = local.tags
   # No private endpoint, even with private networking: it needs the Premium SKU; pulls use Entra authentication.
-  private_endpoint_subnet_id = null
+  private_endpoint = null
 }
 
 output "AZURE_CONTAINER_REGISTRY_ENDPOINT" { value = module.container_registry.login_server }

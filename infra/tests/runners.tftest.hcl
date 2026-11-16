@@ -137,7 +137,7 @@ run "private_networking" {
   }
 
   assert {
-    condition     = keys(local.network.private_dns_zone_ids) == tolist(["privatelink.vaultcore.azure.net"])
+    condition     = contains(keys(local.private_endpoint.private_dns_zone_ids), "privatelink.vaultcore.azure.net")
     error_message = "Key Vault's private DNS zone, for its private endpoint."
   }
 

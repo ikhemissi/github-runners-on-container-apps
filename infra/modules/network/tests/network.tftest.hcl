@@ -1,6 +1,13 @@
 # The subnets and private DNS zones a project lists, with their delegation and their link to the network.
 
-mock_provider "azurerm" {}
+mock_provider "azurerm" {
+  # Key Vault, in the private endpoint run, needs a tenant id in UUID form.
+  mock_data "azurerm_client_config" {
+    defaults = {
+      tenant_id = "00000000-0000-0000-0000-000000000001"
+    }
+  }
+}
 
 run "subnets_and_zones" {
   command = plan
@@ -28,5 +35,19 @@ run "subnets_and_zones" {
   assert {
     condition     = length(azurerm_private_dns_zone_virtual_network_link.main) == 1
     error_message = "Each private DNS zone is linked to the network."
+  }
+}
+
+# A network and a module's private endpoint in one plan (tests/with-private-endpoint): the subnet's id is unknown until
+# apply, and the plan succeeds because the modules decide on the private endpoint from an object, not from that id.
+run "private_endpoint_in_the_same_plan" {
+  command = plan
+
+  module {
+    source = "./tests/with-private-endpoint"
+  }
+
+  providers = {
+    azurerm = azurerm
   }
 }
