@@ -12,6 +12,8 @@ ghcr.io
 # The Copilot cloud agent (docs.github.com: "Using self-hosted GitHub Actions runners"): api.individual, api.business and
 # api.enterprise.githubcopilot.com; its uploads.github.com and user-images.githubusercontent.com are covered above.
 .githubcopilot.com
+# The Microsoft Learn MCP server (https://learn.microsoft.com/api/mcp) the target repository declares for its agents.
+learn.microsoft.com
 
 # Python: PyPI for uv and pip, and uv's own downloads (Python builds, uv releases for astral-sh/setup-uv).
 pypi.org
