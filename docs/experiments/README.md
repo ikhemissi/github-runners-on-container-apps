@@ -11,3 +11,4 @@ Numbered in the order they run; never renumbered. Copy [TEMPLATE.md](TEMPLATE.md
 | 04 | [Event-driven scaling](04-event-scaling.md) | Q3, Q4, Q6 | done: 0 → 0, 1 → 1, 4 → 3 + 1 once ETags are off; idle watchdog |
 | 05 | [Azure sign-in through OIDC, and a budget](05-oidc-and-budget.md) | Q7, Q9 | done: sign-in without a secret (subject with immutable IDs); budget 50 a month |
 | 06 | [Egress control, private networking, and cancelled jobs](06-egress-and-private-networking.md) | Q6, Q9 | done: allowlist proxy and NSG, course CI green behind it; no runner left after cancellations; private networking behind a flag |
+| 07 | [The Copilot cloud agent on the runners](07-copilot-cloud-agent.md) | Q9 | done: sessions started with Actions run on `aca-agent` behind the proxy; Cloud sessions use GitHub's sandbox |

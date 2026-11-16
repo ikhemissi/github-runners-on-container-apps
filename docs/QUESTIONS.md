@@ -10,6 +10,6 @@
 | Q6 | Does a job over its `timeout-minutes` stop, and its execution end before the replica timeout? Are runners ever left offline? | 03, 04, 06 | answered: 10 jobs at once, and a job cancelled at its timeout, left no execution and no runner; the execution ends within seconds of the cancellation |
 | Q7 | Which `sub` claim does the repository's OIDC token carry, and does `azure/login` work with it and no secret? | 05 | answered: the format with immutable IDs; `azure/login` works without a secret (D16) |
 | Q8 | How long does an execution take to start (image of 2.5 GB), and what does a month cost? | 03, 04 | partly answered: 36 s from start to job (15 s image pull); cost in 04 |
-| Q9 | Can the Copilot cloud agent run on these runners (firewall, setup steps)? | 05, 06 | partly answered: yes on ephemeral runners, with its integrated firewall off; egress control now exists (D20), to try |
+| Q9 | Can the Copilot cloud agent run on these runners (firewall, setup steps)? | 05, 06, 07 | answered: yes, with its integrated firewall off and the egress proxy; sessions must be started with Environment → Actions (D23) |
 
 Status: `open`, `answered`, `partly answered`, `unanswered` (with what blocked it).

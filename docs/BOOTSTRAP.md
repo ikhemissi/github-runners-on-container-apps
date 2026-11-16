@@ -83,3 +83,10 @@ Then run the smoke test: its egress step checks that an allowlisted domain answe
 **Private networking:** `azd env set PRIVATE_NETWORKING true`, preview, provision: Key Vault gets a private endpoint (D21).
 
 **Tenant policies:** if your tenant's policies change resources that lack some tags, set them in `RESOURCE_TAGS` before the first provision. Every provision re-applies them, and public network access, to the Terraform state account.
+
+## 7. The Copilot cloud agent (optional)
+
+1. In the target repository's `.github/workflows/copilot-setup-steps.yml`: `runs-on: aca-agent`, and the setup action of any tool the runner image lacks (`actions/setup-go`). Run the workflow once by hand on the runners before merging.
+2. Make sure the allowlist covers the agent's hosts (`.githubcopilot.com`) and the hosts of the MCP servers the repository declares (`.mcp.json`).
+3. Turn off the agent's integrated firewall: repository Settings → Copilot → Cloud agent.
+4. Start each session with Environment → **Actions**; then check the proxy's denied requests ([OPERATIONS](OPERATIONS.md)).

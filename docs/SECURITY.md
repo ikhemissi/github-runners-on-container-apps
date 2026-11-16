@@ -44,3 +44,8 @@ No personal access token, client secret, registry admin user or storage key exis
 - `sudo` keeps the proxy settings, so packages installed as root also go through the proxy.
 - Private networking (`PRIVATE_NETWORKING`, [D21](DECISIONS.md)) gives Key Vault a private endpoint; its public access stays on until every client works from the network.
 - The public CI checks the Terraform offline, with Trivy's accepted findings listed with their reasons in [.trivyignore.yaml](../.trivyignore.yaml) ([D22](DECISIONS.md)).
+
+## Copilot cloud agent (Phase 6)
+
+- Its sessions run on the same ephemeral runners, one per session, behind the egress proxy ([D23](DECISIONS.md)). Its integrated firewall is off, as self-hosted runners require: the proxy's allowlist limits where it connects, including the MCP servers the repository declares.
+- Start sessions with Environment → **Actions**. A session started with **Cloud** runs in GitHub's sandbox, which follows the same firewall setting, so it would have no firewall.
