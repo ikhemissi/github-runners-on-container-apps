@@ -14,7 +14,7 @@
 
 </div>
 
-![Ephemeral GitHub runners on Azure Container Apps: queued GitHub jobs make the KEDA github-runner rule start one Container Apps job execution per job; each reads a GitHub App key from Key Vault with its managed identity, registers a just-in-time runner that takes one job, and reaches the internet only through an allowlist proxy](docs/overview.svg)
+![Ephemeral GitHub runners on Azure Container Apps: the KEDA github-runner rule polls GitHub for queued jobs and starts one Container Apps job execution per job; each reads a GitHub App key from Key Vault with its managed identity, registers a just-in-time runner that takes one job, and reaches the internet only through an allowlist proxy](docs/overview.svg)
 
 **Question:** Can ephemeral, single-use GitHub Actions runners on Azure Container Apps jobs run a private repository's workflows (up to about 3 hours) securely, without PATs or stored secrets, at zero idle cost?
 
@@ -46,8 +46,8 @@ sequenceDiagram
     participant J as Container Apps job execution
     participant KV as Key Vault
     participant P as Egress proxy
-    GH->>K: a job with runs-on aca-agent is queued
-    K->>J: start one execution (polled every 30 s)
+    K->>GH: count the queued jobs for aca-agent (every 30 s)
+    K->>J: start one execution per queued job
     J->>KV: read the Registrar App's key (managed identity)
     J->>GH: installation token, then generate-jitconfig
     J->>GH: run.sh --jitconfig, takes the one job

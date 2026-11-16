@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
   <title id="title">Ephemeral GitHub Actions runners on Azure Container Apps</title>
-  <desc id="desc">A private GitHub repository queues CI jobs and Copilot cloud agent sessions with the label aca-agent. In one Azure resource group, the KEDA github-runner rule counts them and starts one Container Apps job execution per job. Each execution reads a GitHub App's key from Key Vault with its managed identity, registers a just-in-time runner that takes one job, then exits. The runners reach the internet only through an egress proxy with a domain allowlist.</desc>
+  <desc id="desc">A private GitHub repository queues CI jobs and Copilot cloud agent sessions with the label aca-agent. In one Azure resource group, the KEDA github-runner rule polls GitHub for them, reading its GitHub App key from Key Vault, and starts one Container Apps job execution per job; each execution pulls the runner image from the registry. Each execution reads a GitHub App's key from Key Vault with its managed identity, registers a just-in-time runner that takes one job, then exits. The runners reach the internet only through an egress proxy with a domain allowlist.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#3d4466"/>
@@ -106,15 +106,15 @@
   <text class="kind" x="1061" y="484" text-anchor="middle">PyPI · npm · Go</text>
 
   <!-- Arrows -->
-  <line x1="256" y1="228" x2="346" y2="228" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
-  <text class="edge" x="287" y="218" text-anchor="middle">queued</text>
+  <line x1="346" y1="228" x2="258" y2="228" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
+  <text class="edge" x="287" y="218" text-anchor="middle">polls</text>
   <line x1="468" y1="270" x2="468" y2="310" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
   <text class="edge" x="458" y="295" text-anchor="end">one per job</text>
   <line x1="588" y1="228" x2="658" y2="228" stroke="#3d4466" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
   <text class="edge" x="623" y="218" text-anchor="middle">key</text>
   <line x1="588" y1="330" x2="658" y2="262" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
   <text class="edge" x="610" y="286" text-anchor="middle" transform="rotate(-44 610 286)">identity</text>
-  <line x1="658" y1="346" x2="592" y2="392" stroke="#3d4466" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="590" y1="392" x2="656" y2="348" stroke="#3d4466" stroke-width="1.5" marker-end="url(#arrow)"/>
   <line x1="346" y1="440" x2="258" y2="440" stroke="#3d4466" stroke-width="2" marker-end="url(#arrow)"/>
   <text class="edge" x="287" y="430" text-anchor="middle">JIT</text>
   <line x1="588" y1="458" x2="658" y2="458" stroke="#138a7a" stroke-width="2.5" marker-end="url(#arrow-teal)"/>
