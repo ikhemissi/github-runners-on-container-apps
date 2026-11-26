@@ -33,6 +33,11 @@ dl.google.com
 proxy.golang.org
 sum.golang.org
 
+# Terraform: hashicorp/setup-terraform and the providers' downloads; the registry's module and provider indexes.
+# (Modules on GitHub and providers released there are covered by the GitHub lines.)
+releases.hashicorp.com
+registry.terraform.io
+
 # Ubuntu packages (the runner image's apt sources).
 archive.ubuntu.com
 security.ubuntu.com

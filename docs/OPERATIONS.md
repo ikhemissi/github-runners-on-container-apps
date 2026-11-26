@@ -10,6 +10,15 @@ az monitor log-analytics query -w "$ws" --analytics-query "$(cat query.kql)" -o 
 
 Replace the job's name in `let job = …` with `azd env get-value RUNNER_JOB_NAME`. Logs reach the workspace a few minutes late.
 
+## Serve another repository
+
+1. Install the Registrar and Scaler GitHub Apps on the repository (the account's installation: same installation IDs).
+2. `azd env set RUNNER_EXTRA_REPOS "key=repository,key=repository"` (keys: 1 to 6 lowercase letters or digits), then
+   `azd provision --preview` (only new jobs are added) and `azd provision`. Each job is `job-runner-<environment>-<key>`
+   (`azd env get-value RUNNER_EXTRA_JOB_NAMES`).
+3. Workflows ask for `runs-on: aca-agent`. A domain they need beyond the allowlist: `egress-proxy/allowlist.txt`, a new
+   proxy image tag, then `azd provision`.
+
 ## Queries
 
 **Executions per day**, and how many failed:
