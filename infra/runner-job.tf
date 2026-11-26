@@ -17,6 +17,17 @@ variable "runner_github_repo" {
   type        = string
 }
 
+variable "runner_extra_repos" {
+  description = "More private repositories of the same owner to serve, one job each, as comma-separated key=repository pairs (RUNNER_EXTRA_REPOS), e.g. \"mods=my-modules,app=my-app\"; the key (letters and digits, 6 at most) ends the job's name. The two GitHub Apps must be installed on them. Empty: none."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = alltrue([for pair in split(",", var.runner_extra_repos) : trimspace(pair) == "" || can(regex("^[a-z0-9]{1,6}=[A-Za-z0-9._-]+$", trimspace(pair)))])
+    error_message = "runner_extra_repos must be comma-separated key=repository pairs, keys of 1 to 6 lowercase letters or digits."
+  }
+}
+
 variable "runner_registrar_client_id" {
   description = "The Registrar App's client ID (RUNNER_REGISTRAR_CLIENT_ID)."
   type        = string
@@ -80,10 +91,25 @@ variable "runner_replica_timeout_in_seconds" {
 locals {
   # Consumption profile: memory is twice the vCPUs.
   runner_memory = "${var.runner_cpu * 2}Gi"
+
+  # One job per repository: the KEDA rule and the runner's registration each serve one repository (runnerScope=repo).
+  # The first repository keeps the job's original name.
+  runner_extra_repo_pairs = [for pair in split(",", var.runner_extra_repos) : split("=", trimspace(pair)) if trimspace(pair) != ""]
+  runner_jobs = merge(
+    { main = { repo = var.runner_github_repo, name = "job-runner-${var.environment_name}" } },
+    { for pair in local.runner_extra_repo_pairs : pair[0] => { repo = pair[1], name = "job-runner-${var.environment_name}-${pair[0]}" } },
+  )
+}
+
+# The job became one per repository: the existing job is the "main" one, not a new one.
+moved {
+  from = azurerm_container_app_job.runner
+  to   = azurerm_container_app_job.runner["main"]
 }
 
 resource "azurerm_container_app_job" "runner" {
-  name                         = "job-runner-${var.environment_name}"
+  for_each                     = local.runner_jobs
+  name                         = each.value.name
   resource_group_name          = azurerm_resource_group.main.name
   location                     = var.location
   container_app_environment_id = module.container_apps_environment.id
@@ -126,7 +152,7 @@ resource "azurerm_container_app_job" "runner" {
         metadata = {
           owner           = var.runner_github_owner
           runnerScope     = "repo"
-          repos           = var.runner_github_repo
+          repos           = each.value.repo
           labels          = var.runner_labels
           noDefaultLabels = "true"
           # Off: with ETags the scaler kept counting a completed run (docs/DECISIONS.md, D15).
@@ -157,7 +183,7 @@ resource "azurerm_container_app_job" "runner" {
       }
       env {
         name  = "GH_REPO"
-        value = var.runner_github_repo
+        value = each.value.repo
       }
       env {
         name  = "GH_REGISTRAR_CLIENT_ID"
@@ -202,4 +228,5 @@ resource "azurerm_container_app_job" "runner" {
   depends_on = [azurerm_role_assignment.runner_runtime_pull, azurerm_role_assignment.runner_runtime_keys]
 }
 
-output "RUNNER_JOB_NAME" { value = azurerm_container_app_job.runner.name }
+output "RUNNER_JOB_NAME" { value = azurerm_container_app_job.runner["main"].name }
+output "RUNNER_EXTRA_JOB_NAMES" { value = join(",", [for key, job in azurerm_container_app_job.runner : job.name if key != "main"]) }

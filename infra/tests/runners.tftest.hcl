@@ -67,7 +67,7 @@ run "every_flag_off" {
   }
 
   assert {
-    condition     = !contains([for env in azurerm_container_app_job.runner.template[0].container[0].env : env.name], "HTTPS_PROXY")
+    condition     = !contains([for env in azurerm_container_app_job.runner["main"].template[0].container[0].env : env.name], "HTTPS_PROXY")
     error_message = "The job gets no proxy setting without the egress proxy."
   }
 }
@@ -108,7 +108,7 @@ run "egress_proxy" {
   assert {
     condition = alltrue([
       for name in ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy", "NODE_USE_ENV_PROXY"] :
-      contains([for env in azurerm_container_app_job.runner.template[0].container[0].env : env.name], name)
+      contains([for env in azurerm_container_app_job.runner["main"].template[0].container[0].env : env.name], name)
     ])
     error_message = "The job sends its traffic through the proxy, in both spellings, Node included."
   }
@@ -145,4 +145,31 @@ run "private_networking" {
     condition     = length(azurerm_network_security_group.runners) == 0
     error_message = "Private networking alone leaves the runners' internet access open."
   }
+}
+
+run "one_job_per_extra_repository" {
+  command = plan
+
+  variables {
+    runner_extra_repos = "mods=octo-modules, app=octo-app"
+  }
+
+  assert {
+    condition = (
+      azurerm_container_app_job.runner["main"].name == "job-runner-runners-test" &&
+      azurerm_container_app_job.runner["mods"].name == "job-runner-runners-test-mods" &&
+      [for env in azurerm_container_app_job.runner["app"].template[0].container[0].env : env.value if env.name == "GH_REPO"][0] == "octo-app"
+    )
+    error_message = "Each extra repository must get its own job, serving it; the first job must keep its name."
+  }
+}
+
+run "rejects_a_malformed_extra_repository" {
+  command = plan
+
+  variables {
+    runner_extra_repos = "too-long-key=octo-app"
+  }
+
+  expect_failures = [var.runner_extra_repos]
 }
