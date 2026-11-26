@@ -27,11 +27,12 @@ api.mystmd.org
 registry.npmjs.org
 nodejs.org
 
-# Go: actions/setup-go and modules.
+# Go: actions/setup-go and modules. The module proxy serves some module archives by redirecting to Cloud Storage.
 go.dev
 dl.google.com
 proxy.golang.org
 sum.golang.org
+storage.googleapis.com
 
 # Terraform: hashicorp/setup-terraform and the providers' downloads; the registry's module and provider indexes.
 # (Modules on GitHub and providers released there are covered by the GitHub lines.)
