@@ -7,6 +7,13 @@ infra:
   provider: terraform
   path: infra
 
+# The queue watchdog (src/QueueWatchdog): a Flex Consumption function app, created by infra/queue-watchdog.tf.
+services:
+  watchdog:
+    project: ./src/QueueWatchdog
+    language: dotnet
+    host: function
+
 # Each event runs the steps of infra/hooks/<event>/ in name order (infra/hooks/run.sh): what Terraform cannot do.
 hooks:
   preprovision:

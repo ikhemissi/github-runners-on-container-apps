@@ -113,11 +113,22 @@ ContainerAppConsoleLogs
 
 Expected and left denied: Azure CLI telemetry (`dc.services.visualstudio.com`). Lines `NONE_NONE/000` are connections closed without a request (health probes), not denials.
 
+**What the queue watchdog started** ([D26](DECISIONS.md)): each line is a time the scaler left jobs without a runner.
+
+```kusto
+// The queue watchdog's warnings (it started executions) and errors, newest first.
+AppTraces
+| where AppRoleName startswith "func-watchdog" and SeverityLevel >= 2
+| project TimeGenerated, SeverityLevel, Message
+| order by TimeGenerated desc
+```
+
 ## When something looks wrong
 
 | Symptom | Check | Fix |
 |---|---|---|
 | A job waits for a runner | The workflow asks for `runs-on: aca-agent` (not `[self-hosted, aca-agent]`); query 5 counts it; `az containerapp job execution list` shows executions | A failed execution: query 3 gives the phase and reason (exit 1 settings, 2 Azure, 3 GitHub) |
+| Jobs queued for minutes, and the scaler counts 0 | `gh api 'repos/<owner>/<repo>/actions/runs?status=queued'` misses a run that `actions/runs` lists as `queued`; query 7 | The queue watchdog starts executions within 10 minutes ([D26](DECISIONS.md)); at once: `az containerapp job start -n <job> -g <resource group>`, once per queued job |
 | Executions start with nothing queued | Query 5 above zero while idle | `enableEtags` must stay `false`; the watchdog ends each idle execution after `RUNNER_IDLE_TIMEOUT` |
 | A runner stays listed, offline | Settings → Actions → Runners of the target repository | Remove it there (`gh api -X DELETE repos/<owner>/<repo>/actions/runners/<id>`); look for its execution in query 3 |
 | Key Vault read fails at start (exit 2) | The key secret's latest version is the PEM, not the placeholder; the runtime identity's role on that secret | Upload the key again ([BOOTSTRAP](BOOTSTRAP.md#3-upload-the-keys-to-key-vault)) |

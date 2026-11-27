@@ -6,7 +6,7 @@ How each requirement of [PRD-001](prd/PRD-001-ephemeral-runners.md) is met, and 
 
 | Secret | Where it lives | Who can read it |
 |---|---|---|
-| Scaler App private key | Key Vault secret, uploaded by hand | the job's `runtime` identity, as a Key Vault-referenced secret of the scale rule (never an environment variable) |
+| Scaler App private key | Key Vault secret, uploaded by hand | the job's `runtime` identity, as a Key Vault-referenced secret of the scale rule (never an environment variable); the queue watchdog's identity, at each run, for an Actions: read token ([D26](DECISIONS.md)) |
 | Registrar App private key | Key Vault secret, uploaded by hand | the entrypoint, at start-up, with the `runtime` identity |
 | Installation token (1 hour) | a shell variable of the entrypoint | nobody else: cleared before the runner starts |
 | JIT configuration | an argument of `run.sh` | the runner; visible to job steps in the process list while the job runs (single-use, bound to this runner) |

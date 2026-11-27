@@ -25,32 +25,33 @@ mock_provider "http" {
 }
 
 variables {
-  environment_name                   = "runners-test"
-  subscription_id                    = "00000000-0000-0000-0000-000000000000"
-  location                           = "francecentral"
-  tags                               = ""
-  runner_image_tag                   = "test"
-  runner_github_owner                = "octo-org"
-  runner_github_repo                 = "octo-repo"
-  runner_registrar_client_id         = "Iv1.test"
-  runner_registrar_installation_id   = "1"
-  runner_labels                      = "aca-agent"
-  runner_group_id                    = 1
-  runner_scaler_app_id               = "2"
-  runner_scaler_installation_id      = "1"
-  runner_max_executions              = 3
-  runner_polling_interval_in_seconds = 30
-  runner_idle_timeout_in_seconds     = 300
-  runner_cpu                         = 2
-  runner_replica_timeout_in_seconds  = 12600
-  runner_oidc_environment            = "azure-dev"
-  runner_deployer_oidc_subject       = ""
-  runner_deployer_scope              = ""
-  runner_deployer_role               = "Reader"
-  budget_amount                      = 0
-  enable_egress_proxy                = false
-  egress_proxy_image_tag             = ""
-  enable_private_networking          = false
+  environment_name                      = "runners-test"
+  subscription_id                       = "00000000-0000-0000-0000-000000000000"
+  location                              = "francecentral"
+  tags                                  = ""
+  runner_image_tag                      = "test"
+  runner_github_owner                   = "octo-org"
+  runner_github_repo                    = "octo-repo"
+  runner_registrar_client_id            = "Iv1.test"
+  runner_registrar_installation_id      = "1"
+  runner_labels                         = "aca-agent"
+  runner_group_id                       = 1
+  runner_scaler_app_id                  = "2"
+  runner_scaler_installation_id         = "1"
+  runner_max_executions                 = 3
+  runner_polling_interval_in_seconds    = 30
+  runner_idle_timeout_in_seconds        = 300
+  queue_watchdog_stuck_after_in_seconds = 300
+  runner_cpu                            = 2
+  runner_replica_timeout_in_seconds     = 12600
+  runner_oidc_environment               = "azure-dev"
+  runner_deployer_oidc_subject          = ""
+  runner_deployer_scope                 = ""
+  runner_deployer_role                  = "Reader"
+  budget_amount                         = 0
+  enable_egress_proxy                   = false
+  egress_proxy_image_tag                = ""
+  enable_private_networking             = false
 }
 
 run "every_flag_off" {
@@ -172,4 +173,39 @@ run "rejects_a_malformed_extra_repository" {
   }
 
   expect_failures = [var.runner_extra_repos]
+}
+
+run "queue_watchdog_watches_every_runner_job" {
+  command = plan
+
+  variables {
+    runner_extra_repos = "mods=octo-modules"
+  }
+
+  assert {
+    condition     = local.queue_watchdog_runner_jobs == "octo-repo=job-runner-runners-test,octo-modules=job-runner-runners-test-mods"
+    error_message = "The watchdog must check every runner job, each with its repository."
+  }
+
+  assert {
+    condition     = keys(local.queue_watchdog_job_roles) == ["runner-job-main", "runner-job-mods"]
+    error_message = "The watchdog's role must be assigned on each runner job."
+  }
+
+  assert {
+    condition = toset(azurerm_role_definition.queue_watchdog.permissions[0].actions) == toset([
+      "Microsoft.App/jobs/read", "Microsoft.App/jobs/executions/read", "Microsoft.App/jobs/start/action",
+    ])
+    error_message = "The watchdog's role may only read the runner jobs and their executions, and start one."
+  }
+}
+
+run "rejects_a_watchdog_wait_shorter_than_the_scaler" {
+  command = plan
+
+  variables {
+    queue_watchdog_stuck_after_in_seconds = 60
+  }
+
+  expect_failures = [var.queue_watchdog_stuck_after_in_seconds]
 }

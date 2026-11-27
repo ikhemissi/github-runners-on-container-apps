@@ -19,3 +19,21 @@ misconfigurations:
       - "runner/Dockerfile"
     statement: >-
       MICROSOFT_KEY_FINGERPRINT is the public fingerprint of Microsoft's package signing key, not a secret.
+  - id: AZU-0012
+    paths:
+      - "infra/modules/storage-account/main.tf"
+    statement: >-
+      The queue watchdog's host storage (deployment package and Functions host state, no data): its Flex Consumption
+      app has no virtual network integration, so it reaches the account's public endpoint. Shared keys are disabled:
+      only Entra identities with a role on the account get in (docs/DECISIONS.md, D26).
+  - id: AZU-0057
+    paths:
+      - "infra/modules/storage-account/main.tf"
+    statement: >-
+      Classic storage logging is not used: the account holds only the watchdog's package and host state.
+  - id: AZU-0061
+    paths:
+      - "infra/modules/storage-account/main.tf"
+    statement: >-
+      Service-level encryption (Microsoft-managed keys) is enough for a deployment package and host state; the module
+      is shared and stays as it is.

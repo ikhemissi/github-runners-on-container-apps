@@ -11,3 +11,7 @@ __pycache__/
 *.pfx
 # Local files from fast-start, never committed
 .fast-start/
+
+# .NET build output
+bin/
+obj/
