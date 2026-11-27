@@ -7,7 +7,7 @@ HADOLINT_IMAGE = ghcr.io/hadolint/hadolint:v2.15.1
 REGISTRY_NAME = $(firstword $(subst ., ,$(shell azd env get-value AZURE_CONTAINER_REGISTRY_ENDPOINT)))
 TAG ?= $(shell git rev-parse --short HEAD)
 
-.PHONY: lint build test run-local build-proxy test-proxy test-infra push-runner push-proxy
+.PHONY: lint build test run-local build-proxy test-proxy test-infra test-watchdog push-runner push-proxy
 
 lint:  ## shellcheck and hadolint
 	shellcheck -x runner/entrypoint.sh runner/tests/test-entrypoint.sh egress-proxy/tests/test-proxy.sh
@@ -41,6 +41,9 @@ test-infra:  ## Terraform offline: format, validation, tflint, Trivy (.trivyigno
 	trivy config --quiet --exit-code 1 --severity MEDIUM,HIGH,CRITICAL --ignorefile .trivyignore.yaml .
 	terraform -chdir=infra test
 	for module in infra/modules/*/; do terraform -chdir="$$module" init -backend=false -input=false >/dev/null && terraform -chdir="$$module" test || exit 1; done
+
+test-watchdog:  ## the queue watchdog's unit tests (src/QueueWatchdog)
+	dotnet test QueueWatchdog.slnx
 
 push-runner:  ## build the runner image in the registry (ACR Tasks), tagged with the commit; then RUNNER_IMAGE_TAG=$(TAG)
 	az acr build --registry $(REGISTRY_NAME) --platform linux/amd64 --image gh-runner:$(TAG) runner

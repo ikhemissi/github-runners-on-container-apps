@@ -36,6 +36,7 @@
 | Azure from workflows | Steps sign in through GitHub OIDC as an identity the job never holds; the token's subject carried immutable IDs. | [05](docs/experiments/05-oidc-and-budget.md), [D16](docs/DECISIONS.md) |
 | Egress | An allowlist proxy and a network security group limit the runners to listed domains; the course's CI needed two domains beyond the obvious ones. | [06](docs/experiments/06-egress-and-private-networking.md), [D20](docs/DECISIONS.md) |
 | Copilot cloud agent | Runs on these runners, with its integrated firewall off and sessions started with Environment → Actions. | [07](docs/experiments/07-copilot-cloud-agent.md), [D23](docs/DECISIONS.md) |
+| Missed queue | Once, the scaler's status-filtered GitHub query left a queued run out for 80 minutes; a queue watchdog function now starts runners for any job queued over 5 minutes. | [09](docs/experiments/09-queue-watchdog.md), [D26](docs/DECISIONS.md) |
 | Containers | No Docker or Podman inside a Consumption execution: container actions, `services:` and dev-container builds stay on GitHub-hosted runners. | [03](docs/experiments/03-job-started-by-hand.md), [D13](docs/DECISIONS.md) |
 
 ## How it works
@@ -58,6 +59,7 @@ sequenceDiagram
 ```
 
 - **Two GitHub Apps, no personal access token:** a Scaler App (Actions: read) for KEDA, its key a Key Vault-referenced secret of the job; a Registrar App (Administration: write, one repository) for the [entrypoint](runner/entrypoint.sh), which clears every identity variable before the runner starts.
+- **Queue watchdog:** a function checks every 5 minutes, from GitHub's unfiltered run list, for jobs the scaler left waiting, and starts their executions ([D26](docs/DECISIONS.md)).
 - **Single use:** `replica_retry_limit = 0`, one job per execution, and a watchdog that removes a runner that gets no job.
 - **Workflow steps and Azure:** GitHub OIDC with a federated credential on a separate `deployer` identity, for one GitHub environment that accepts `main` only.
 - **Egress (optional, `EGRESS_PROXY`):** Squid in an internal Container Apps environment allows only [allowlist.txt](egress-proxy/allowlist.txt); the runners' subnet is denied the internet but for what the platform and the scaler need.
@@ -87,6 +89,7 @@ Day-to-day: [OPERATIONS](docs/OPERATIONS.md) (queries, troubleshooting). Tear it
 make lint         # shellcheck and hadolint
 make test         # the runner image: its tools, sudo keeping the proxy settings, the entrypoint's offline tests
 make test-proxy   # the egress proxy image: allowlisted domains pass, others are denied (needs internet access)
+make test-watchdog  # the queue watchdog's unit tests (.NET 10)
 make test-infra   # Terraform offline: fmt, validate, tflint, Trivy, terraform test with mock providers
 ```
 
@@ -100,7 +103,7 @@ CI runs them on every push ([ci.yml](.github/workflows/ci.yml)); plans and appli
 | [PRD-001](docs/prd/PRD-001-ephemeral-runners.md) | Requirements and phases |
 | [Decisions](docs/DECISIONS.md) | Choices and departures from the PRD (D1–D23) |
 | [Questions](docs/QUESTIONS.md) | What the spike had to answer, and the status of each question |
-| [Experiments](docs/experiments/README.md) | One file per experiment, 00–07 |
+| [Experiments](docs/experiments/README.md) | One file per experiment, 00–09 |
 | [Security](docs/SECURITY.md) | Secrets, identities, egress, residual risks |
 | [Bootstrap](docs/BOOTSTRAP.md) · [Operations](docs/OPERATIONS.md) | Setting it up; running it |
 | [Retest plan](docs/RETEST-PLAN.md) · [Demo runbook](docs/DEMO-RUNBOOK.md) | What to run again when something changes; how to show it |
